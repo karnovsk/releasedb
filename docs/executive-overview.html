@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReleaseDB — Executive Overview</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,900;1,9..144,300;1,9..144,600&family=Inter:wght@300;400;500;600&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink:      #0e1117;
+  --paper:    #f5f2ec;
+  --paper2:   #ede9e0;
+  --border:   #d4cfc4;
+  --rust:     #b84c2e;
+  --rust-lt:  #f0ded8;
+  --teal:     #1a6b6b;
+  --teal-lt:  #d4ecec;
+  --gold:     #7a5c1e;
+  --gold-lt:  #f5edda;
+  --violet:   #4a3b7a;
+  --violet-lt:#e8e4f5;
+  --green:    #2d6a4a;
+  --green-lt: #d4ece0;
+  --muted:    #7a7165;
+  --faint:    #e8e4db;
+  --slide-w:  1100px;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: #1a1a1a;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+/* ── SLIDE SHELL ──────────────────────────────────────────────────────────── */
+
+.deck {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+  max-width: calc(var(--slide-w) + 8px);
+  margin: 0 auto;
+}
+
+.slide {
+  background: var(--paper);
+  width: var(--slide-w);
+  min-height: 618px;          /* 16:9 at 1100px */
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* slide counter */
+.slide::after {
+  content: attr(data-n);
+  position: absolute;
+  bottom: 18px; right: 24px;
+  font-size: 10px;
+  color: var(--border);
+  letter-spacing: 0.08em;
+}
+
+/* ── TYPOGRAPHY ───────────────────────────────────────────────────────────── */
+
+.f-serif { font-family: 'Fraunces', Georgia, serif; }
+
+h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-height: 1.1; }
+
+.eyebrow {
+  font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+  font-weight: 600; margin-bottom: 10px;
+}
+
+/* ── COVER SLIDE ──────────────────────────────────────────────────────────── */
+
+.slide-cover {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 64px 72px;
+  justify-content: space-between;
+}
+
+.cover-body { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+.cover-eyebrow { color: #6b7280; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 20px; }
+
+.cover-title { font-family: 'Fraunces', Georgia, serif; font-size: 58px; font-weight: 900; font-style: italic; line-height: 1; color: var(--paper); }
+.cover-title em { color: #e8703a; font-style: normal; }
+
+.cover-sub { margin-top: 22px; font-size: 15px; color: #9ca3af; font-weight: 300; max-width: 560px; line-height: 1.7; }
+
+.cover-foot { display: flex; align-items: center; gap: 32px; padding-top: 32px; border-top: 1px solid #2d2d2d; }
+.cover-foot-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #4b5563; }
+.cover-foot-val { font-size: 11px; color: #6b7280; margin-top: 3px; }
+
+/* ── SECTION DIVIDER ──────────────────────────────────────────────────────── */
+
+.slide-divider {
+  padding: 0;
+  flex-direction: row;
+}
+.divider-bar {
+  width: 8px;
+  background: var(--rust);
+  flex-shrink: 0;
+}
+.divider-body {
+  flex: 1;
+  padding: 64px 72px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.divider-num {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 120px; font-weight: 900; font-style: italic;
+  color: var(--faint);
+  line-height: 1;
+  margin-bottom: 12px;
+}
+.divider-title {
+  font-size: 42px;
+}
+.divider-sub {
+  margin-top: 14px;
+  font-size: 15px; color: var(--muted); max-width: 520px; line-height: 1.65;
+}
+
+/* ── CONTENT SLIDE ────────────────────────────────────────────────────────── */
+
+.slide-content { padding: 52px 72px 40px; }
+
+.slide-header {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 36px;
+}
+.sh-bar { width: 4px; height: 28px; border-radius: 2px; flex-shrink: 0; }
+.sh-title { font-size: 28px; }
+
+/* ── PROBLEM GRID ─────────────────────────────────────────────────────────── */
+
+.problem-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.problem-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 22px 20px;
+  border-top: 3px solid var(--rust);
+}
+.problem-icon { font-size: 22px; margin-bottom: 12px; line-height: 1; }
+.problem-title { font-weight: 600; font-size: 13px; margin-bottom: 8px; color: var(--ink); }
+.problem-body { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+/* ── DEFINITION BOX ───────────────────────────────────────────────────────── */
+
+.defn-box {
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 8px;
+  padding: 32px 36px;
+  margin-bottom: 24px;
+}
+.defn-box p {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 21px; font-weight: 300; font-style: italic;
+  line-height: 1.55;
+}
+.defn-box strong { color: #e8703a; font-style: normal; font-weight: 600; }
+
+.not-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.not-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: white; border: 1px solid var(--border);
+  border-radius: 6px; padding: 14px 16px;
+}
+.not-x { color: var(--muted); font-size: 18px; flex-shrink: 0; line-height: 1.3; }
+.not-text { font-size: 12.5px; color: var(--muted); line-height: 1.55; }
+.not-text strong { color: var(--ink); display: block; margin-bottom: 3px; font-size: 13px; }
+
+/* ── LIFECYCLE DIAGRAM ────────────────────────────────────────────────────── */
+
+.lifecycle {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 8px 0 28px;
+}
+
+.lc-step {
+  flex: 1;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px 12px;
+  text-align: center;
+  position: relative;
+}
+.lc-step + .lc-step { margin-left: -1px; border-radius: 0; }
+.lc-step:first-child { border-radius: 6px 0 0 6px; }
+.lc-step:last-child  { border-radius: 0 6px 6px 0; }
+
+.lc-num { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.lc-label { font-weight: 600; font-size: 12px; color: var(--ink); }
+.lc-sub { font-size: 10px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+
+.lc-step.active {
+  background: var(--ink);
+  border-color: var(--ink);
+  z-index: 1;
+}
+.lc-step.active .lc-num { color: #6b7280; }
+.lc-step.active .lc-label { color: var(--paper); }
+.lc-step.active .lc-sub { color: #9ca3af; }
+
+.lc-arrow {
+  width: 20px; flex-shrink: 0; text-align: center;
+  font-size: 14px; color: var(--border); z-index: 2;
+  margin: 0 -2px;
+}
+
+.lc-note-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+  column-gap: 0;
+}
+.lc-note { font-size: 10px; color: var(--muted); text-align: center; padding: 0 4px; line-height: 1.4; }
+
+/* ── CAPABILITY GRID ──────────────────────────────────────────────────────── */
+
+.cap-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.cap-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 20px 18px;
+}
+.cap-icon { font-size: 20px; margin-bottom: 10px; line-height: 1; }
+.cap-title { font-weight: 600; font-size: 13px; color: var(--ink); margin-bottom: 6px; }
+.cap-body  { font-size: 11.5px; color: var(--muted); line-height: 1.6; }
+
+/* ── STAKEHOLDER GRID ─────────────────────────────────────────────────────── */
+
+.stake-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.stake-card {
+  border-radius: 8px;
+  padding: 24px 20px;
+}
+.stake-role { font-weight: 700; font-size: 13px; margin-bottom: 10px; }
+.stake-list { list-style: none; }
+.stake-list li {
+  font-size: 12px; line-height: 1.55;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.stake-list li:last-child { border-bottom: none; }
+.stake-list li::before { content: "→"; flex-shrink: 0; opacity: 0.4; }
+
+/* ── ADOPTION TIMELINE ────────────────────────────────────────────────────── */
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+}
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 28px; top: 0; bottom: 0; width: 2px;
+  background: var(--border);
+}
+
+.tl-item {
+  display: flex; align-items: flex-start; gap: 20px;
+  padding: 14px 0;
+  position: relative;
+}
+.tl-dot {
+  width: 58px; height: 58px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+  flex-shrink: 0; z-index: 1; margin-top: -2px;
+}
+.tl-body { padding-top: 4px; }
+.tl-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.tl-desc  { font-size: 12px; color: var(--muted); line-height: 1.6; max-width: 640px; }
+
+/* ── STATUS GRID ──────────────────────────────────────────────────────────── */
+
+.status-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.status-col-title {
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--muted); font-weight: 600; margin-bottom: 12px;
+}
+
+.status-list { display: flex; flex-direction: column; gap: 8px; }
+
+.status-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: white; border: 1px solid var(--border);
+  border-radius: 6px; padding: 12px 14px;
+}
+.status-pip {
+  width: 8px; height: 8px; border-radius: 50%;
+  flex-shrink: 0; margin-top: 4px;
+}
+.status-text { font-size: 12.5px; color: var(--ink); line-height: 1.5; }
+.status-text span { color: var(--muted); font-size: 11.5px; display: block; }
+
+/* ── CLOSING SLIDE ────────────────────────────────────────────────────────── */
+
+.slide-close {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 64px 72px;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.close-title {
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 44px; font-weight: 900; font-style: italic;
+  color: var(--paper);
+  margin-bottom: 16px;
+}
+.close-title em { color: #e8703a; font-style: normal; }
+
+.close-sub {
+  font-size: 15px; color: #9ca3af; max-width: 560px; line-height: 1.7;
+  margin: 0 auto 40px;
+}
+
+.ask-grid {
+  display: flex; gap: 14px; justify-content: center;
+}
+.ask-chip {
+  background: #1e2530;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 16px 22px;
+  font-size: 13px;
+  color: #d1d5db;
+  line-height: 1.5;
+  text-align: left;
+  max-width: 220px;
+}
+.ask-chip strong { color: var(--paper); display: block; margin-bottom: 4px; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* ── PRINT / EXPORT ───────────────────────────────────────────────────────── */
+@media print {
+  body { background: white; }
+  .deck { gap: 0; padding: 0; }
+  .slide { page-break-after: always; min-height: 100vh; }
+}
+</style>
+</head>
+<body>
+
+<div class="deck">
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SLIDE 1 — COVER
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="slide slide-cover" data-n="1 / 10">
+
+  <div class="cover-body">
+    <div class="cover-eyebrow">Internal Platform · Confidential</div>
+    <div class="cover-title">Release<em>DB</em></div>
+    <div class="cover-sub">
+      A coordination and audit layer for software releases across teams —
+      giving engineering leadership complete visibility and control over
+      what ships, when, and why.
+    </div>
+  </div>
+
+  <div class="cover-foot">
+    <div>
+      <div class="cover-foot-label">Status</div>
+      <div class="cover-foot-val">Design complete · Implementation in progress</div>
+    </div>
+    <div>
+      <div class="cover-foot-label">Audience</div>
+      <div class="cover-foot-val">Engineering Leadership · Platform Team</div>
+    </div>
+    <div>
+      <div class="cover-foot-label">Version</div>
+      <div class="cover-foot-val">Schema v3 · 2026</div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SLIDE 2 — THE PROBLEM
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="slide slide-content" data-n="2 / 10">
+
+  <div class="slide-header">
+    <div class="sh-bar" style="background:var(--rust)"></div>
+    <h2 class="sh-title f-serif">The problem we are solving</h2>
+  </div>
+
+  <div class="problem-grid">
+
+    <div class="problem-card">
+      <div class="problem-icon">🔍</div>
+      <div class="problem-title">No single source of truth</div>
+      <div class="problem-body">
+        There is no reliable answer to "what version of X is running in production right now, who approved it, and what validation did it pass?" Information lives in Slack threads, JIRA tickets, and individual engineers' heads.
+      </div>
+    </div>
+
+    <div class="problem-card">
+      <div class="problem-icon">🤝</div>
+      <div class="problem-title">Release coordination is manual</div>
+      <div class="problem-body">
+        Cross-team releases depend on email chains and ad-hoc Slack coordination. Approvals are unstructured, non-binding, and leave no audit trail. A missed sign-off is invisible until something goes wrong.
+      </div>
+    </div>
+
+    <div class="problem-card">
+      <div class="problem-icon">🔐</div>
+      <div class="problem-title">Validation is inconsistent</div>
+      <div class="problem-body">
+        Each team runs its own checks in its own way. There is no guarantee that a release has passed the right validations before it reaches production. Outcomes are not recorded systematically.
+      </div>
+    </div>
+
+    <div class="problem-card">
+      <div class="problem-icon">🛡️</div>
+      <div class="problem-title">Security response is slow</div>
+      <div class="problem-body">
+        When a vulnerability is found in a build tool or a dependency, there is no fast way to find every artifact that was built with it. Blast radius assessment takes days of manual archaeology.
+      </div>
+    </div>
+
+    <div class="problem-card">
+      <div class="problem-icon">📋</div>
+      <div class="problem-title">Compliance gaps</div>
+      <div class="problem-body">
+        Auditors need evidence that changes were reviewed, validated, and approved before deployment. Assembling this evidence from Jenkins logs, git history, and Slack exports is painful and error-prone.
+      </div>
+    </div>
+
+    <div class="problem-card">
+      <div class="problem-icon">⏱️</div>
+      <div class="problem-title">Releases block on humans</div>
+      <div class="problem-body">
+        Validation steps that could be automated run manually, on different schedules, by different people. Teams wait for sign-offs they don't fully understand. Release velocity is throttled by process friction.
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SLIDE 3 — WHAT RELEASEDB IS
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="slide slide-content" data-n="3 / 10">
+
+  <div class="slide-header">
+    <div class="sh-bar" style="background:var(--teal)"></div>
+    <h2 class="sh-title f-serif">What ReleaseDB is</h2>
+  </div>
+
+  <div class="defn-box">
+    <p>
+      ReleaseDB is an <strong>inter-team release coordination layer</strong> that sits above
+      existing CI/CD tooling. It records <strong>what was built</strong>, <strong>how it was validated</strong>,
+      <strong>who approved it</strong>, and <strong>where it was deployed</strong> —
+      creating a permanent, queryable audit trail for every release in the organisation.
+    </p>
+  </div>
+
+  <div style="margin-bottom:16px">
+    <div class="eyebrow" style="color:var(--muted)">It does not replace — it sits above</div>
+  </div>
+
+  <div class="not-list">
+    <div class="not-item">
+      <div class="not-x">↗</div>
+      <div class="not-text">
+        <strong>Jenkins / CI pipelines</strong>
+        Builds still run in Jenkins. ReleaseDB receives the results and records them.
+      </div>
+    </div>
+    <div class="not-item">
+      <div class="not-x">↗</div>
+      <div class="not-text">
+        <strong>Artifactory / S3 / registries</strong>
+        Artifacts are still stored in existing systems. ReleaseDB tracks metadata and provenance, not binaries.
+      </div>
+    </div>
+    <div class="not-item">
+      <div class="not-x">↗</div>
+      <div class="not-text">
+        <strong>Deployment tooling</strong>
+        Deployments still run via existing mechanisms. ReleaseDB records the outcome and links it to the release.
+      </div>
+    </div>
+    <div class="not-item">
+      <div class="not-x">↗</div>
+      <div class="not-text">
+        <strong>JIRA / ticketing</strong>
+        Release notes and ticket links are captured as custom metadata fields — not managed by ReleaseDB.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SLIDE 4 — THE RELEASE LIFECYCLE
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="slide slide-content" data-n="4 / 10">
+
+  <div class="slide-header">
+    <div class="sh-bar" style="background:var(--gold)"></div>
+    <h2 class="sh-title f-serif">The release lifecycle</h2>
+  </div>
+
+  <div class="lifecycle">
+    <div class="lc-step">
+      <div class="lc-num">01</div>
+      <div class="lc-label">Build</div>
+      <div class="lc-sub">CI pipeline produces artifact</div>
+    </div>
+    <div class="lc-arrow">›</div>
+    <div class="lc-step">
+      <div class="lc-num">02</div>
+      <div class="lc-label">Register</div>
+      <div class="lc-sub">Artifact registered with provenance</div>
+    </div>
+    <div class="lc-arrow">›</div>
+    <div class="lc-step active">
+      <div class="lc-num">03</div>
+      <div class="lc-label">Validate</div>
+      <div class="lc-sub">Scripts run automatically</div>
+    </div>
+    <div class="lc-arrow">›</div>
+    <div class="lc-step">
+      <div class="lc-num">04</div>
+      <div class="lc-label">Approve</div>
+      <div class="lc-sub">Team leads sign off</div>
+    </div>
+    <div class="lc-arrow">›</div>
+    <div class="lc-step">
+      <div class="lc-num">05</div>
+      <div class="lc-label">Deploy</div>
+      <div class="lc-sub">Deployment recorded</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:8px">
+
+    <div style="background:white;border:1px solid var(--border);border-radius:6px;padding:18px 16px">
+      <div style="font-weight:600;font-size:12px;margin-bottom:8px;color:var(--ink)">Team configures once</div>
+      <div style="font-size:11.5px;color:var(--muted);line-height:1.6">
+        Teams define their release shape, required metadata fields, and which validation scripts must pass — all in a YAML file checked into their repository. ReleaseDB enforces it automatically on every release.
+      </div>
+    </div>
+
+    <div style="background:white;border:1px solid var(--border);border-radius:6px;padding:18px 16px">
+      <div style="font-weight:600;font-size:12px;margin-bottom:8px;color:var(--ink)">Validation is automated and recorded</div>
+      <div style="font-size:11.5px;color:var(--muted);line-height:1.6">
+        Validation scripts run in Docker containers. Results — pass, fail, warn — are stored with full stdout/stderr. Blocking validations prevent advancement. Non-blocking validations warn without halting.
+      </div>
+    </div>
+
+    <div style="background:white;border:1px solid var(--border);border-radius:6px;padding:18px 16px">
+      <div style="font-weight:600;font-size:12px;margin-bottom:8px;color:var(--ink)">Every action is an immutable event</div>
+      <div style="font-size:11.5px;color:var(--muted);line-height:1.6">
+        Every state change — artifact registered, validation passed, approval given, deployment started — writes an immutable event row. This log cannot be altered. It is the compliance record.
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SLIDE 5 — KEY CAPABILITIES
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="slide slide-content" data-n="5 / 10">
+
+  <div class="slide-header">
+    <div class="sh-bar" style="background:var(--violet)"></div>
+    <h2 class="sh-title f-serif">Key capabilities</h2>
+  </div>
+
+  <div class="cap-grid">
+
+    <div class="cap-card" style="border-top:3px solid var(--teal)">
+      <div class="cap-icon">🔬</div>
+      <div class="cap-title">Configurable per-team release types</div>
+      <div class="cap-body">
+        Each team defines their own release shape: artifact count, versioning scheme, required metadata, and which file types are permitted. Firmware, services, and libraries each follow their own rules.
+      </div>
+    </div>
+
+    <div class="cap-card" style="border-top:3px solid var(--rust)">
+      <div class="cap-icon">✅</div>
+      <div class="cap-title">Automated validation gates</div>
+      <div class="cap-body">
+        Teams register Docker-based validation scripts that run automatically on every release. Blocking validators prevent advancement; non-blocking ones record warnings. Results are stored with full evidence.
+      </div>
+    </div>
+
+    <div class="cap-card" style="border-top:3px solid var(--gold)">
+      <div class="cap-icon">🖊️</div>
+      <div class="cap-title">Structured approval workflows</div>
+      <div class="cap-body">
+        Approvals are captured per-release, per-environment, per-team. Each approval records the approver's identity, decision, comment, and timestamp. Approvals are required before deployment can proceed.
+      </div>
+    </div>
+
+    <div class="cap-card" style="border-top:3px solid var(--violet)">
+      <div class="cap-icon">🔗</div>
+      <div class="cap-title">Full artifact provenance</div>
+      <div class="cap-body">
+        Every artifact records the git commit, CI run URL, build tools (name + version + git SHA), and a cryptographic manifest digest. Answer "exactly what produced this binary?" in one query.
+      </div>
+    </div>
+
+    <div class="cap-card" style="border-top:3px solid var(--green)">
+      <div class="cap-icon">📜</div>
+      <div class="cap-title">Immutable audit log</div>
+      <div class="cap-body">
+        Every event — artifact registered, validator run, approval given, deployment started — is appended to an immutable log enforced at the database level. Nothing is ever updated or deleted.
+      </div>
+    </div>
+
+    <div class="cap-card" style="border-top:3px solid #b8862e">
+      <div class="cap-icon">🛠️</div>
+      <div class="cap-title">Config-as-code team onboarding</div>
+      <div class="cap-body">
+        Teams onboard by committing a <code style="font-size:11px;background:var(--faint);padding:1px 4px;border-radius:3px">releasedb.yaml</code> file to their repository. One command syncs their configuration to the platform. No UI forms to fill in.
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SLIDE 6 — WHO BENEFITS
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="slide slide-content" data-n="6 / 10">
+
+  <div class="slide-header">
+    <div class="sh-bar" style="background:var(--green)"></div>
+    <h2 class="sh-title f-serif">Who benefits and how</h2>
+  </div>
+
+  <div class="stake-grid">
+
+    <div class="stake-card" style="background:var(--faint);border:1px solid var(--border)">
+      <div class="stake-role" style="color:var(--rust)">Engineering Leadership</div>
+      <ul class="stake-list">
+        <li>See what is running in every environment at any time</li>
+        <li>Know that every production release was approved by an authorised person</li>
+        <li>Respond to security incidents with exact toolchain impact data</li>
+        <li>Produce compliance evidence without manual assembly</li>
+        <li>Track release velocity and validation pass rates across teams</li>
+      </ul>
+    </div>
+
+    <div class="stake-card" style="background:var(--faint);border:1px solid var(--border)">
+      <div class="stake-role" style="color:var(--teal)">Team Leaders</div>
+      <ul class="stake-list">
+        <li>Define their team's release rules once in a YAML file</li>
+        <li>See all pending approvals in one place</li>
+        <li>Approve or reject with a comment — recorded permanently</li>
+        <li>Get notified when a release is ready for sign-off</li>
+        <li>Delegate approval to specific individuals per environment</li>
+      </ul>
+    </div>
+
+    <div class="stake-card" style="background:var(--faint);border:1px solid var(--border)">
+      <div class="stake-role" style="color:var(--violet)">Engineers</div>
+      <ul class="stake-list">
+        <li>Release pipeline integrates with existing Jenkins jobs</li>
+        <li>Write validation scripts using a simple Python SDK</li>
+        <li>Test validators locally with one command, no live API needed</li>
+        <li>See exactly which checks passed or failed and why</li>
+        <li>No new tools to learn beyond a YAML config file</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <div style="margin-top:18px;background:var(--ink);border-radius:6px;padding:18px 24px;display:flex;align-items:center;gap:32px">
+    <div style="flex:1;font-size:12.5px;color:#9ca3af;line-height:1.6">
+      <strong style="color:var(--paper);font-size:13px">Platform team</strong> maintains ReleaseDB itself — the database, API, and runner infrastructure. All other teams are <em>users</em> of the platform with zero infrastructure responsibilities.
+    </div>
+    <div style="flex:1;font-size:12.5px;color:#9ca3af;line-height:1.6">
+      <strong style="color:var(--paper);font-size:13px">Auditors / Security</strong> get a read-only API and dashboard view. No access to underlying systems required. Evidence export is a single API call.
+    </div>
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SLIDE 7 — HOW TEAMS ADOPT IT
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="slide slide-content" data-n="7 / 10">
+
+  <div class="slide-header">
+    <div class="sh-bar" style="background:var(--gold)"></div>
+    <h2 class="sh-title f-serif">How a team adopts ReleaseDB</h2>
+  </div>
+
+  <div class="timeline">
+
+    <div class="tl-item">
+      <div class="tl-dot" style="background:var(--rust-lt);color:var(--rust)">Day 1</div>
+      <div class="tl-body">
+        <div class="tl-title">Copy the config template</div>
+        <div class="tl-desc">
+          The team copies <code style="font-size:11px;background:var(--faint);padding:1px 4px;border-radius:3px">releasedb.template.yaml</code> into their repository, fills in their team slug, and defines their first release type with required metadata fields. This file is reviewed and merged via a normal pull request.
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot" style="background:var(--teal-lt);color:var(--teal)">Day 2</div>
+      <div class="tl-body">
+        <div class="tl-title">Sync configuration to the platform</div>
+        <div class="tl-desc">
+          One command — <code style="font-size:11px;background:var(--faint);padding:1px 4px;border-radius:3px">releasedb-sync --dry-run</code> — previews every change before applying. The team runs <code style="font-size:11px;background:var(--faint);padding:1px 4px;border-radius:3px">releasedb-sync</code> to register their team, release types, and field definitions. A Jenkins "setup" pipeline automates this on every merge to main.
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot" style="background:var(--violet-lt);color:var(--violet)">Week 1</div>
+      <div class="tl-body">
+        <div class="tl-title">Write and register validation scripts</div>
+        <div class="tl-desc">
+          Engineers write validation scripts using the Python SDK and test them locally with <code style="font-size:11px;background:var(--faint);padding:1px 4px;border-radius:3px">releasedb-validate --dry-run</code>. Scripts are uploaded to S3, their checksums recorded in <code style="font-size:11px;background:var(--faint);padding:1px 4px;border-radius:3px">releasedb.yaml</code>, and synced to the platform.
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-dot" style="background:var(--green-lt);color:var(--green)">Week 2</div>
+      <div class="tl-body">
+        <div class="tl-title">Add ReleaseDB steps to the Jenkins pipeline</div>
+        <div class="tl-desc">
+          Two API calls are added to the existing Jenkinsfile: one to register the artifact after build, one to trigger and gate on validation before promotion. The team's first end-to-end release flows through the system.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SLIDE 8 — CURRENT STATE
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="slide slide-content" data-n="8 / 10">
+
+  <div class="slide-header">
+    <div class="sh-bar" style="background:var(--teal)"></div>
+    <h2 class="sh-title f-serif">Current state</h2>
+  </div>
+
+  <div class="status-grid">
+
+    <div>
+      <div class="status-col-title">Completed</div>
+      <div class="status-list">
+
+        <div class="status-item">
+          <div class="status-pip" style="background:var(--green)"></div>
+          <div class="status-text">
+            PostgreSQL schema — 15 tables across 5 layers
+            <span>Full DDL with constraints, indexes, and triggers</span>
+          </div>
+        </div>
+
+        <div class="status-item">
+          <div class="status-pip" style="background:var(--green)"></div>
+          <div class="status-text">
+            Database migration tooling
+            <span>Alembic scaffold with initial migration and rollback</span>
+          </div>
+        </div>
+
+        <div class="status-item">
+          <div class="status-pip" style="background:var(--green)"></div>
+          <div class="status-text">
+            Python SDK — validator framework
+            <span>Base class, built-in checks, context objects, result reporting</span>
+          </div>
+        </div>
+
+        <div class="status-item">
+          <div class="status-pip" style="background:var(--green)"></div>
+          <div class="status-text">
+            Config-as-code sync tool (<code style="font-size:11px">releasedb-sync</code>)
+            <span>YAML config, Pydantic validation, dry-run mode, 50 tests</span>
+          </div>
+        </div>
+
+        <div class="status-item">
+          <div class="status-pip" style="background:var(--green)"></div>
+          <div class="status-text">
+            Documentation — schema, SDK, sync guide, user guide
+            <span>ER diagram, interactive schema HTML, full API reference</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div>
+      <div class="status-col-title">To build</div>
+      <div class="status-list">
+
+        <div class="status-item">
+          <div class="status-pip" style="background:var(--border)"></div>
+          <div class="status-text">
+            REST API server
+            <span>All CRUD endpoints, auth, validation runner integration</span>
+          </div>
+        </div>
+
+        <div class="status-item">
+          <div class="status-pip" style="background:var(--border)"></div>
+          <div class="status-text">
+            Validation runner
+            <span>Docker-based script execution engine, result reporting</span>
+          </div>
+        </div>
+
+        <div class="status-item">
+          <div class="status-pip" style="background:var(--border)"></div>
+          <div class="status-text">
+            Release operations web UI
+            <span>Release detail, approval workflow, validation result viewer</span>
+          </div>
+        </div>
+
+        <div class="status-item">
+          <div class="status-pip" style="background:var(--border)"></div>
+          <div class="status-text">
+            Artifact lineage tracking
+            <span>Parent → child artifact chain, recursive lineage queries</span>
+          </div>
+        </div>
+
+        <div class="status-item">
+          <div class="status-pip" style="background:var(--border)"></div>
+          <div class="status-text">
+            Notification integrations
+            <span>Slack and PagerDuty hooks for approval requests and failures</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SLIDE 9 — OPEN DESIGN QUESTIONS
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="slide slide-content" data-n="9 / 10">
+
+  <div class="slide-header">
+    <div class="sh-bar" style="background:var(--rust)"></div>
+    <h2 class="sh-title f-serif">Open design decisions</h2>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+
+    <div style="background:white;border:1px solid var(--border);border-radius:6px;padding:20px 18px">
+      <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--rust);font-weight:600;margin-bottom:10px">Artifact lineage</div>
+      <div style="font-size:12.5px;color:var(--ink);line-height:1.6;margin-bottom:12px">
+        Should we track which artifact was derived from a previous artifact? Required for: container image chains, firmware layering, security impact tracing.
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);line-height:1.55">
+        <strong>Options:</strong> single parent FK on <code style="font-size:10.5px;background:var(--faint);padding:1px 3px;border-radius:2px">artifacts</code> (simple), or a join table for multi-parent merge builds (flexible).
+      </div>
+    </div>
+
+    <div style="background:white;border:1px solid var(--border);border-radius:6px;padding:20px 18px">
+      <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:10px">Canonical release marking</div>
+      <div style="font-size:12.5px;color:var(--ink);line-height:1.6;margin-bottom:12px">
+        Do external systems (registries, deployment tools) need to pull "the release artifact" by a stable name independent of the release lifecycle status?
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);line-height:1.55">
+        <strong>Options:</strong> rely on <code style="font-size:10.5px;background:var(--faint);padding:1px 3px;border-radius:2px">status = deployed</code> (no schema change), add a boolean flag, or a separate named-tag table.
+      </div>
+    </div>
+
+    <div style="background:white;border:1px solid var(--border);border-radius:6px;padding:20px 18px">
+      <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--violet);font-weight:600;margin-bottom:10px">Artifact dashboard</div>
+      <div style="font-size:12.5px;color:var(--ink);line-height:1.6;margin-bottom:12px">
+        A read-only view of artifacts, lineage, validation status, and provenance. Should this be built bespoke or use an off-the-shelf tool?
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);line-height:1.55">
+        <strong>Options:</strong> Retool (fastest to value, no frontend code), or bespoke FastAPI + HTMX (~300 lines, fully owned). Metabase / Grafana are weaker fits.
+      </div>
+    </div>
+
+  </div>
+
+  <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+
+    <div style="background:var(--faint);border:1px solid var(--border);border-radius:6px;padding:16px 18px">
+      <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:8px">Operations web UI scope</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6">
+        Five pages covers all human-centric workflows: dashboard (pending approvals), release list, release detail (validations + approvals + events), approval action, tool registry. Retool delivers this in a day; a bespoke view takes a sprint.
+      </div>
+    </div>
+
+    <div style="background:var(--faint);border:1px solid var(--border);border-radius:6px;padding:16px 18px">
+      <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:8px">Authentication model</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6">
+        The API currently uses bearer tokens. Production will require SSO integration (Okta / Azure AD) so that <code style="font-size:10.5px;background:var(--border);padding:1px 3px;border-radius:2px">approver_identity</code> is a verified user identity, not a self-reported string. This gates the compliance story.
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SLIDE 10 — CLOSE
+════════════════════════════════════════════════════════════════════════════ -->
+<div class="slide slide-close" data-n="10 / 10">
+
+  <div class="close-title">Release<em>DB</em></div>
+  <div class="close-sub">
+    One platform. Every release. Full provenance, automated validation,
+    structured approvals, and an immutable audit trail — without replacing
+    a single tool teams already use.
+  </div>
+
+  <div class="ask-grid">
+    <div class="ask-chip">
+      <strong>Decision needed</strong>
+      Prioritise artifact lineage, canonical release marking, or dashboard first?
+    </div>
+    <div class="ask-chip">
+      <strong>Decision needed</strong>
+      Retool for the operations UI, or invest in a bespoke build?
+    </div>
+    <div class="ask-chip">
+      <strong>Decision needed</strong>
+      SSO integration scope — which identity provider, timeline?
+    </div>
+    <div class="ask-chip">
+      <strong>Next milestone</strong>
+      API server + runner. Enables first end-to-end release through the system.
+    </div>
+  </div>
+
+</div>
+
+</div><!-- /.deck -->
+</body>
+</html>
