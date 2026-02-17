@@ -146,3 +146,57 @@ pytest tests/ -v
 |---|---|
 | `releasedb-sync [CONFIG]` | Sync a `releasedb.yaml` to the API. Add `--dry-run` to preview. |
 | `releasedb-validate SCRIPT` | Run a validator script. Add `--dry-run` for local testing without a live API. |
+
+---
+
+## Open Items
+
+### 1. Artifact lineage
+
+Track which artifact was derived from a previous artifact (parent → child).
+
+Covers firmware layering, container images built FROM a base image, multi-stage builds, and security response ("which derived artifacts need a rebuild?"). The removed `artifact_dependencies` table was too broad; this is the targeted replacement — a single nullable self-referencing FK:
+
+```sql
+-- Migration needed
+ALTER TABLE artifacts
+    ADD COLUMN derived_from_artifact_id uuid REFERENCES artifacts(id) ON DELETE SET NULL;
+CREATE INDEX ON artifacts (derived_from_artifact_id);
+```
+
+Recursive lineage queries can walk the chain with a CTE. Open questions: do we need multiple parents (merge builds)? Should circularity be prevented at DB or application level? Should `derived_from` be settable via CI pipeline or also via `releasedb.yaml`?
+
+SDK impact: `ArtifactContext.parent_artifact_id`, `RELEASEDB_PARENT_ARTIFACT_ID` env var injected by runner.
+API impact: `POST /api/artifacts` accepts `derived_from_artifact_id`; `GET /api/artifacts/:id/lineage` returns ancestor chain.
+
+---
+
+### 2. Marking artifacts as canonical releases
+
+Artifacts are currently build outputs that belong to a release, but there is no way to promote a specific artifact to "this is the blessed release artifact" independently of the release lifecycle status.
+
+Potential approaches:
+
+- **Flag on `artifacts`** — add `is_release_artifact boolean DEFAULT false`. Simple; queryable. Requires a convention for when to set it.
+- **Separate `release_tags` table** — a named tag (e.g. `v2.4.1-production`) pointing to an artifact. More flexible; supports multiple named pointers to the same artifact (GA, LTS, latest).
+- **Rely on `releases.status = 'deployed'`** — treat the artifact linked to a `deployed` release as implicitly canonical. No schema change; may be sufficient.
+
+Decision needed: is this a display/query concern (filter by deployed releases) or does it need a first-class schema concept? The answer likely depends on whether external systems (registries, deployment tools) need to pull "the release artifact" by a stable name.
+
+---
+
+### 3. Artifact and lineage dashboard
+
+A read-only web view showing existing artifacts, their provenance, lineage chains, and validation status.
+
+**Off-the-shelf options to evaluate:**
+
+| Tool | Fit | Notes |
+|---|---|---|
+| **Retool** | High | Connects directly to PostgreSQL; drag-and-drop tables, lineage tree via custom component; no frontend code needed; hosted or self-hosted |
+| **Metabase** | Medium | Strong for tabular views and filters; limited for graph/tree visualisation of lineage |
+| **Grafana** | Medium | Good dashboards for time-series validation metrics; not designed for relational record browsing |
+| **Superset** | Medium | SQL-driven; good for aggregate views, weak on record-level drill-down |
+| **Bespoke (FastAPI + HTMX)** | High control | ~300 lines for a read-only artifact browser; full control over lineage tree rendering; no JS framework needed |
+
+Minimum viable view: artifact list (filterable by team, release type, status) → artifact detail (provenance, files, tools used, validation results, lineage chain). Retool covers this in a day; a bespoke view takes a sprint but is fully ownable.
