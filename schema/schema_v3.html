@@ -621,7 +621,7 @@ body {
         <div class="tc-head">
           <div>
             <div class="tc-name-row"><div class="tc-dot" style="background:#4a3b7a"></div><div class="tc-name">artifact_files</div></div>
-            <div class="tc-desc">Physical files belonging to an artifact. Single-file → 1 row. Multi-file → N rows, each with its own digest and storage ref.</div>
+            <div class="tc-desc">Physical files belonging to an artifact. Single-file → 1 row. Multi-file → N rows, each with its own digest and storage ref. Uniqueness is scoped to (artifact_id, digest) — the same binary may appear in multiple artifacts.</div>
           </div>
         </div>
         <div class="tc-fields">
@@ -632,10 +632,11 @@ body {
           <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">file_role</span><span class="fr-type">varchar(60)</span><span class="fr-note">primary/signature/checksum/metadata</span></div>
           <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">storage_uri</span><span class="fr-type">text</span><span class="fr-note">s3:// or file:// path</span></div>
           <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">media_type</span><span class="fr-type">varchar(120)</span><span class="fr-note">MIME type</span></div>
-          <div class="fr"><span class="fr-badge b-uk">UK</span><span class="fr-name">digest</span><span class="fr-type">varchar(128)</span><span class="fr-note">sha256 of file</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">digest</span><span class="fr-type">varchar(128)</span><span class="fr-note">sha256 of file — NOT NULL</span></div>
           <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">size_bytes</span><span class="fr-type">bigint</span><span class="fr-note"></span></div>
           <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">signature</span><span class="fr-type">text</span><span class="fr-note">cosign / sigstore</span></div>
           <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">uploaded_at</span><span class="fr-type">timestamptz</span><span class="fr-note">NOT NULL</span></div>
+          <div class="fr highlight"><span class="fr-badge b-uk">UK</span><span class="fr-name">—</span><span class="fr-type"></span><span class="fr-note">(artifact_id, digest) — scoped, not global</span></div>
         </div>
       </div>
 

@@ -12,6 +12,7 @@ license = { text = "MIT" }
 dependencies = [
     "requests>=2.28",
     "pydantic>=2.0",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
@@ -19,11 +20,15 @@ dev = [
     "pytest>=7.0",
     "pytest-mock>=3.10",
     "responses>=0.23",   # mock HTTP in tests
+    "alembic>=1.13",
+    "psycopg2-binary>=2.9",
 ]
 
 [project.scripts]
-# Lets teams do: releasedb-validate --dry-run my_script.py
+# Run a validator script with dry-run support for local testing
 releasedb-validate = "releasedb_validator.cli:main"
+# Sync a releasedb.yaml config file to the ReleaseDB API
+releasedb-sync     = "releasedb_validator.sync.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

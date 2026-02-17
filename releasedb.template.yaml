@@ -1,0 +1,230 @@
+# =============================================================================
+# releasedb.yaml — Team configuration template
+# =============================================================================
+#
+# Copy this file to your repository root, rename it releasedb.yaml, and fill
+# in the values for your team.
+#
+# Apply to the ReleaseDB API with:
+#   releasedb-sync --dry-run          # preview changes
+#   releasedb-sync                    # apply changes
+#
+# Environment variables used by releasedb-sync:
+#   RELEASEDB_API_URL    Base URL of the ReleaseDB server
+#   RELEASEDB_API_TOKEN  Bearer token with admin write access
+#
+# Rules
+# -----
+# - Resources are NEVER deleted by sync. To remove a release type or field
+#   use the ReleaseDB UI or API directly.
+# - Changing a slug (team.slug, a release_type slug, a field key, a
+#   validation name) creates a NEW record. The old one is left in place.
+# - Run sync in --dry-run to see exactly what would change before applying.
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# team
+# Identifies your team in ReleaseDB. One team block per file.
+# -----------------------------------------------------------------------------
+team:
+  # URL-safe identifier. Must be unique across the org. Never change this after
+  # first sync — it is the primary key used everywhere.
+  slug: my-team
+
+  # Human-readable name shown in the UI and notifications.
+  name: My Team
+
+  # Distribution email for release notifications and escalations. Optional.
+  contact_email: my-team@company.com
+
+  # Arbitrary key/value metadata. Optional.
+  # Supported keys (used by notification integrations):
+  #   slack_channel   — e.g. "#my-team-releases"
+  #   pagerduty_service — PagerDuty service name or ID
+  metadata:
+    slack_channel: "#my-team-releases"
+    pagerduty_service: my-team-prod
+
+
+# -----------------------------------------------------------------------------
+# release_types
+# Define one entry per release type your team manages.
+# A release type is a template that shapes how releases are structured,
+# what metadata they carry, and which validators must pass before approval.
+# -----------------------------------------------------------------------------
+release_types:
+
+  # ---------------------------------------------------------------------------
+  # Example: a single-file firmware release using semantic versioning.
+  # ---------------------------------------------------------------------------
+  - slug: firmware-drop          # Unique across the org. Used in API paths and env vars.
+    display_name: Firmware Release
+    description: >
+      Weekly firmware build for the MK3 hardware platform.
+      Validated against the expected SHA-256 digest and hardware revision.
+
+    # Artifact shape -----------------------------------------------------------
+    # single: one artifact per release (most common)
+    # multi:  multiple artifacts per release (e.g. multi-arch builds)
+    artifact_cardinality: single
+
+    # Optional regex the artifact version string must match.
+    # Omit to accept any version string that conforms to version_scheme.
+    # artifact_naming_regex: "^firmware-mk3-\\d+\\.\\d+\\.\\d+$"
+
+    # Permitted file extensions. Omit to allow any extension.
+    allowed_file_types:
+      - .bin
+      - .hex
+
+    # Lifecycle ----------------------------------------------------------------
+    # If true, releases require explicit approval before deployment.
+    requires_approval: true
+
+    # Version scheme enforced on release.version:
+    #   semver — 1.2.3
+    #   calver — 2024.03.1
+    #   seq    — monotonically increasing integer
+    version_scheme: semver
+
+    # Custom metadata fields ---------------------------------------------------
+    # These fields appear on the release creation form and are injected into
+    # validator scripts as RELEASEDB_FIELD_<KEY> environment variables.
+    fields:
+      - key: expected_sha256        # Becomes RELEASEDB_FIELD_EXPECTED_SHA256
+        label: Expected SHA-256
+        type: string
+        required: true
+        # Optional regex applied client-side before submission.
+        validation_regex: "^[0-9a-f]{64}$"
+
+      - key: target_hw_revision
+        label: Target Hardware Revision
+        type: enum
+        required: true
+        options:
+          - rev-a
+          - rev-b
+          - rev-c
+
+      - key: jira_ticket
+        label: JIRA Ticket
+        type: string
+        required: false
+        validation_regex: "^[A-Z]+-\\d+$"
+
+      - key: release_notes_url
+        label: Release Notes URL
+        type: string
+        required: false
+
+    # Validation scripts -------------------------------------------------------
+    # Each validation is a script that runs before a release can be approved.
+    # Scripts are executed in run_order (ascending). Scripts at the same
+    # run_order value may run in parallel (implementation-dependent).
+    validations:
+      - name: firmware-integrity-check
+        description: Verifies file presence and SHA-256 digest against expected_sha256 field.
+        runner_type: docker
+        runner_image: my-registry.internal/firmware-validator:1.2.0
+        # script_url points to the validation script. Use an immutable reference
+        # (pinned tag or commit SHA) in production.
+        script_url: s3://my-releases-bucket/validators/firmware_validator.py
+        # script_checksum ensures the script hasn't changed since registration.
+        # Compute with: sha256sum validators/firmware_validator.py
+        script_checksum: "sha256:aabbccdd1122334455667788990011223344556677889900aabbccdd11223344"
+        applies_to: artifact   # runs once per artifact
+        is_blocking: true
+        on_failure: block
+        timeout_seconds: 120
+        run_order: 10
+
+      - name: jira-ticket-open-check
+        description: Confirms the JIRA ticket is in an approved state for release.
+        runner_type: docker
+        runner_image: my-registry.internal/jira-validator:latest
+        script_url: s3://my-releases-bucket/validators/jira_check.py
+        script_checksum: "sha256:1122334455667788990011223344556677889900aabbccdd1122334455667788"
+        applies_to: release    # runs once per release
+        is_blocking: false
+        on_failure: warn       # non-blocking: warn but don't stop the release
+        timeout_seconds: 30
+        run_order: 20
+        # Only run this validator when deploying to production.
+        environment: prod
+
+      - name: staging-smoke-test
+        description: >
+          Runs a quick HTTP smoke test against the staging endpoint after
+          the firmware is deployed to staging. Requires STAGING_ENDPOINT
+          to be set in the release env_vars.
+        runner_type: docker
+        runner_image: my-registry.internal/http-tester:1.0.0
+        script_url: s3://my-releases-bucket/validators/smoke_test.py
+        script_checksum: "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+        applies_to: release
+        is_blocking: true
+        on_failure: block
+        timeout_seconds: 60
+        run_order: 30
+        environment: staging   # only runs in staging
+        # Extra env vars injected at runtime (on top of standard RELEASEDB_* vars)
+        env_vars:
+          STAGING_ENDPOINT: "https://staging.firmware.internal"
+          EXPECTED_STATUS_CODE: "200"
+
+  # ---------------------------------------------------------------------------
+  # Example: a multi-artifact Java service release using calendar versioning.
+  # ---------------------------------------------------------------------------
+  - slug: java-service-release
+    display_name: Java Service Release
+    description: Backend service JAR + Docker image, released together.
+    artifact_cardinality: multi
+    allowed_file_types:
+      - .jar
+      - .tar.gz
+    requires_approval: true
+    version_scheme: calver
+
+    fields:
+      - key: service_name
+        label: Service Name
+        type: string
+        required: true
+
+      - key: previous_version
+        label: Previous Version (for diff)
+        type: string
+        required: false
+
+      - key: staging_health_url
+        label: Staging Health Endpoint
+        type: string
+        required: false
+
+    validations:
+      - name: no-snapshot-deps
+        description: Ensures no SNAPSHOT or -dev dependencies in the JAR manifest.
+        runner_type: docker
+        runner_image: my-registry.internal/java-validator:2.0.1
+        script_url: s3://my-releases-bucket/validators/java_service_validator.py
+        script_checksum: "sha256:cafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe"
+        applies_to: artifact
+        is_blocking: true
+        on_failure: block
+        timeout_seconds: 60
+        run_order: 10
+
+      - name: staging-health-check
+        description: Confirms the service health endpoint returns HTTP 200.
+        runner_type: docker
+        runner_image: my-registry.internal/http-tester:1.0.0
+        script_url: s3://my-releases-bucket/validators/smoke_test.py
+        script_checksum: "sha256:cafecafecafecafecafecafecafecafecafecafecafecafecafecafecafecafe"
+        applies_to: release
+        is_blocking: false
+        on_failure: warn
+        timeout_seconds: 30
+        run_order: 20
+        environment: staging
