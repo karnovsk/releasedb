@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "releasedb-validator"
+version = "1.0.0"
+description = "SDK for writing ReleaseDB validation scripts"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+dependencies = [
+    "requests>=2.28",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-mock>=3.10",
+    "responses>=0.23",   # mock HTTP in tests
+]
+
+[project.scripts]
+# Lets teams do: releasedb-validate --dry-run my_script.py
+releasedb-validate = "releasedb_validator.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["releasedb_validator*"]

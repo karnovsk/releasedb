@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReleaseDB — Schema v3</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,300&display=swap');
+
+:root {
+  --ink: #0e1117;
+  --paper: #f5f2ec;
+  --paper2: #ede9e0;
+  --border: #d4cfc4;
+  --border2: #bfb9ab;
+  --rust: #b84c2e;
+  --teal: #1a6b6b;
+  --gold: #7a5c1e;
+  --violet: #4a3b7a;
+  --muted: #7a7165;
+  --faint: #e8e4db;
+  --pk: #1a5c2a;
+  --fk: #2a3a6b;
+  --uk: #6b3a1a;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* HEADER */
+.header {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 36px 48px 32px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  align-items: end;
+}
+.header-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+.header h1 {
+  font-family: 'Fraunces', serif;
+  font-size: 32px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: -0.5px;
+  line-height: 1;
+  color: var(--paper);
+}
+.header h1 em { color: #e8703a; font-style: normal; }
+.header-sub {
+  margin-top: 10px;
+  font-size: 11px;
+  color: #6b7280;
+  font-weight: 300;
+  max-width: 540px;
+  line-height: 1.6;
+}
+.header-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.hbadge {
+  font-size: 9px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.hbadge-removed { background: #3f1a1a; color: #fca5a5; border: 1px solid #7f1d1d; }
+.hbadge-added   { background: #1a3a1a; color: #86efac; border: 1px solid #14532d; }
+.hbadge-updated { background: #1a2a3a; color: #93c5fd; border: 1px solid #1e3a8a; }
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+.legend-row { display: flex; align-items: center; gap: 8px; color: #9ca3af; }
+.legend-pip {
+  font-size: 8px; font-weight: 700; padding: 1px 5px;
+  border-radius: 3px; width: 28px; text-align: center; flex-shrink: 0;
+}
+.pip-pk  { background: #14532d; color: #86efac; }
+.pip-fk  { background: #1e3a8a; color: #93c5fd; }
+.pip-uk  { background: #7c2d12; color: #fca5a5; }
+.pip-idx { background: #1c1917; color: #a8a29e; }
+
+/* LAYOUT */
+.layout {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  min-height: calc(100vh - 140px);
+}
+
+/* SIDEBAR */
+.sidebar {
+  border-right: 1px solid var(--border);
+  padding: 28px 0;
+  position: sticky;
+  top: 0;
+  height: calc(100vh - 140px);
+  overflow-y: auto;
+  background: var(--faint);
+}
+.sb-section { margin-bottom: 4px; }
+.sb-label {
+  font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--muted); padding: 12px 20px 5px; font-weight: 500;
+}
+.sb-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 7px 20px; cursor: pointer; font-size: 11.5px;
+  color: var(--muted); transition: all 0.12s;
+  border-left: 2px solid transparent;
+}
+.sb-item:hover { background: var(--paper2); color: var(--ink); }
+.sb-item.active { background: var(--paper); color: var(--ink); border-left-color: var(--rust); font-weight: 500; }
+.sb-pip { width: 7px; height: 7px; border-radius: 2px; flex-shrink: 0; }
+.sb-badge {
+  margin-left: auto; font-size: 8px; padding: 1px 5px;
+  border-radius: 2px; font-weight: 700; letter-spacing: 0.04em;
+}
+.sb-new     { background: #1a3a1a; color: #86efac; }
+.sb-updated { background: #1a2a3a; color: #93c5fd; }
+.sb-removed { background: #3a1a1a; color: #fca5a5; text-decoration: line-through; }
+
+/* CONTENT */
+.content { padding: 40px 48px 80px; overflow-y: auto; }
+
+/* CHANGELOG CALLOUT */
+.changelog {
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 8px;
+  padding: 20px 28px;
+  margin-bottom: 36px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px 32px;
+}
+.cl-title {
+  font-family: 'Fraunces', serif;
+  font-size: 13px; font-weight: 700;
+  color: #e8703a; letter-spacing: 0.04em;
+  margin-bottom: 10px; grid-column: 1/-1;
+}
+.cl-item { display: flex; gap: 10px; font-size: 11px; color: #d1d5db; line-height: 1.55; }
+.cl-icon {
+  font-size: 14px; flex-shrink: 0; line-height: 1.2;
+}
+.cl-item strong { color: var(--paper); font-weight: 500; }
+
+/* SECTION HEADER */
+.section-header {
+  display: flex; align-items: center; gap: 14px;
+  margin: 40px 0 20px;
+}
+.section-header:first-of-type { margin-top: 0; }
+.sh-bar { width: 3px; height: 22px; border-radius: 2px; flex-shrink: 0; }
+.sh-text { font-family: 'Fraunces', serif; font-size: 17px; font-weight: 700; font-style: italic; color: var(--ink); }
+.sh-rule { flex: 1; height: 1px; background: var(--border); }
+.sh-count { font-size: 10px; color: var(--muted); letter-spacing: 0.06em; }
+
+/* TABLE GRID */
+.table-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 20px; }
+
+/* TABLE CARD */
+.tc {
+  border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+  transition: box-shadow 0.15s, border-color 0.15s;
+  scroll-margin-top: 60px; background: white;
+}
+.tc:hover { border-color: var(--border2); box-shadow: 0 4px 20px rgba(14,17,23,0.08); }
+.tc.focus { border-color: var(--rust); box-shadow: 0 0 0 2px rgba(184,76,46,0.12); }
+.tc.is-new { border-left: 3px solid #16a34a; }
+.tc.is-updated { border-left: 3px solid #2563eb; }
+
+.tc-head {
+  padding: 13px 16px 11px; border-bottom: 1px solid var(--faint);
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+}
+.tc-name-row { display: flex; align-items: center; gap: 9px; }
+.tc-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; margin-top: 1px; }
+.tc-name { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 700; color: var(--ink); }
+.tc-desc { font-size: 10px; color: var(--muted); margin-top: 3px; font-weight: 300; line-height: 1.45; max-width: 300px; }
+
+.tc-tag {
+  font-size: 9px; padding: 2px 7px; border-radius: 3px;
+  font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; flex-shrink: 0; margin-top: 2px;
+}
+.tag-new     { background: #f0fdf4; color: #14532d; border: 1px solid #bbf7d0; }
+.tag-updated { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+
+/* FIELD ROWS */
+.tc-fields { padding: 4px 0; }
+.fr {
+  display: grid; grid-template-columns: 30px 1fr 100px 90px;
+  align-items: center; padding: 5px 16px; gap: 8px;
+  border-bottom: 1px solid #f5f2ec; transition: background 0.1s;
+}
+.fr:last-child { border-bottom: none; }
+.fr:hover { background: #fafaf8; }
+.fr.highlight { background: #fffbeb; }
+
+.fr-badge {
+  font-size: 8px; font-weight: 600; letter-spacing: 0.05em;
+  padding: 1px 4px; border-radius: 2px; text-align: center; text-transform: uppercase;
+}
+.b-pk  { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.b-fk  { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.b-uk  { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+.b-idx { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
+.b-nil { background: transparent; border: none; color: transparent; font-size: 0; }
+
+.fr-name { font-size: 12px; font-weight: 500; color: var(--ink); }
+.fr-name.pk { color: var(--pk); }
+.fr-name.fk { color: var(--fk); }
+.fr-type  { font-size: 10.5px; color: var(--teal); text-align: right; font-weight: 400; }
+.fr-note  { font-size: 10px; color: var(--muted); text-align: right; font-weight: 300; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.enum-chip {
+  display: inline-block; font-size: 8px; padding: 1px 4px; border-radius: 2px;
+  background: #ede9e0; color: var(--muted); font-weight: 600;
+  letter-spacing: 0.04em; text-transform: uppercase; margin-right: 3px; vertical-align: middle;
+}
+
+.fr-divider {
+  font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; color: #c4bfb5;
+  padding: 6px 16px 3px; background: #fafaf8;
+  border-bottom: 1px solid var(--faint); border-top: 1px solid var(--faint); margin-top: 2px;
+}
+
+/* RELATIONSHIPS TABLE */
+.rel-block { margin-top: 40px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: white; }
+.rel-head  { padding: 14px 20px; background: var(--ink); }
+.rel-head-title { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 700; font-style: italic; color: var(--paper); }
+
+.rel-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+.rel-table th {
+  padding: 8px 18px; text-align: left; font-size: 9px;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+  background: var(--faint); font-weight: 500; border-bottom: 1px solid var(--border);
+}
+.rel-table td { padding: 9px 18px; border-bottom: 1px solid var(--faint); vertical-align: middle; }
+.rel-table tr:last-child td { border-bottom: none; }
+.rel-table tr:hover td { background: #fafaf8; }
+
+.rel-badge {
+  font-size: 9px; padding: 2px 7px; border-radius: 3px;
+  font-weight: 700; letter-spacing: 0.04em; display: inline-block;
+}
+.rb-1m   { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.rb-mm   { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.rb-11   { background: #fefce8; color: #854d0e; border: 1px solid #fef08a; }
+.rb-self { background: #fdf4ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--faint); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-eyebrow">Database Schema Design · v3.0</div>
+    <h1>Release<em>DB</em></h1>
+    <div class="header-sub">
+      Inter-team release management · configurable release types per team ·
+      user-supplied validation scripts · artifact lineage &amp; toolchain tracking
+    </div>
+    <div class="header-badges">
+      <span class="hbadge hbadge-removed">− artifact_dependencies removed</span>
+      <span class="hbadge hbadge-added">+ tools lookup table added</span>
+      <span class="hbadge hbadge-added">+ artifact_tools added</span>
+      <span class="hbadge hbadge-updated">↻ artifacts updated</span>
+    </div>
+  </div>
+  <div class="legend">
+    <div class="legend-row"><span class="legend-pip pip-pk">PK</span> Primary key</div>
+    <div class="legend-row"><span class="legend-pip pip-fk">FK</span> Foreign key</div>
+    <div class="legend-row"><span class="legend-pip pip-uk">UK</span> Unique constraint</div>
+    <div class="legend-row"><span class="legend-pip pip-idx">IX</span> Index</div>
+  </div>
+</div>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+
+    <div class="sb-section">
+      <div class="sb-label">Config Layer</div>
+      <div class="sb-item active" onclick="nav('teams',this)"><div class="sb-pip" style="background:#2d7a4a"></div>teams</div>
+      <div class="sb-item" onclick="nav('release_type_configs',this)"><div class="sb-pip" style="background:#2d7a4a"></div>release_type_configs</div>
+      <div class="sb-item" onclick="nav('release_type_field_defs',this)"><div class="sb-pip" style="background:#2d7a4a"></div>release_type_field_defs</div>
+      <div class="sb-item" onclick="nav('validation_definitions',this)"><div class="sb-pip" style="background:#2d7a4a"></div>validation_definitions</div>
+      <div class="sb-item" onclick="nav('environments',this)"><div class="sb-pip" style="background:#2d7a4a"></div>environments</div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-label">Release Layer</div>
+      <div class="sb-item" onclick="nav('releases',this)"><div class="sb-pip" style="background:#b84c2e"></div>releases</div>
+      <div class="sb-item" onclick="nav('release_field_values',this)"><div class="sb-pip" style="background:#b84c2e"></div>release_field_values</div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-label">Artifact Layer</div>
+      <div class="sb-item" onclick="nav('tools',this)"><div class="sb-pip" style="background:#4a3b7a"></div>tools <span class="sb-badge sb-new">new</span></div>
+      <div class="sb-item" onclick="nav('artifacts',this)"><div class="sb-pip" style="background:#4a3b7a"></div>artifacts <span class="sb-badge sb-updated">updated</span></div>
+      <div class="sb-item" onclick="nav('artifact_files',this)"><div class="sb-pip" style="background:#4a3b7a"></div>artifact_files</div>
+      <div class="sb-item" onclick="nav('artifact_tools',this)"><div class="sb-pip" style="background:#4a3b7a"></div>artifact_tools <span class="sb-badge sb-new">new</span></div>
+      <div class="sb-item" style="opacity:0.35; cursor:default; text-decoration:line-through;">
+        <div class="sb-pip" style="background:#999"></div>artifact_dependencies <span class="sb-badge sb-removed">removed</span>
+      </div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-label">Validation Layer</div>
+      <div class="sb-item" onclick="nav('validation_runs',this)"><div class="sb-pip" style="background:#1a6b6b"></div>validation_runs</div>
+      <div class="sb-item" onclick="nav('validation_results',this)"><div class="sb-pip" style="background:#1a6b6b"></div>validation_results</div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-label">Workflow Layer</div>
+      <div class="sb-item" onclick="nav('approvals',this)"><div class="sb-pip" style="background:#7a5c1e"></div>approvals</div>
+      <div class="sb-item" onclick="nav('deployments',this)"><div class="sb-pip" style="background:#7a5c1e"></div>deployments</div>
+      <div class="sb-item" onclick="nav('release_events',this)"><div class="sb-pip" style="background:#6b3a3a"></div>release_events</div>
+    </div>
+
+    <div style="padding:20px 16px 0;font-size:9px;color:#b0a89a;line-height:1.8;border-top:1px solid var(--border);margin-top:16px;">
+      <span style="color:#86efac">▌</span> new table<br>
+      <span style="color:#93c5fd">▌</span> updated table<br>
+      <span style="color:#fca5a5;text-decoration:line-through">▌</span> removed
+    </div>
+  </nav>
+
+  <!-- CONTENT -->
+  <main class="content">
+
+    <!-- CHANGELOG -->
+    <div class="changelog">
+      <div class="cl-title">↗ v3 Changes</div>
+      <div class="cl-item">
+        <span class="cl-icon">−</span>
+        <span><strong>artifact_dependencies removed.</strong> Dependency graph tracking not required for this tool.</span>
+      </div>
+      <div class="cl-item">
+        <span class="cl-icon">+</span>
+        <span><strong>tools lookup table added.</strong> Canonical registry of build tools with controlled vocabulary — enforces spelling consistency and stores source/ownership metadata.</span>
+      </div>
+      <div class="cl-item">
+        <span class="cl-icon">+</span>
+        <span><strong>artifact_tools added.</strong> Links each artifact to the tools used to build it. Each tool carries its own git version. Unique constraint on <code>(artifact_id, tool_id)</code> prevents duplicates.</span>
+      </div>
+    </div>
+
+    <!-- CONFIG LAYER -->
+    <div class="section-header" id="section-config">
+      <div class="sh-bar" style="background:#2d7a4a"></div>
+      <div class="sh-text">Config Layer</div>
+      <div class="sh-rule"></div>
+      <div class="sh-count">5 tables · unchanged</div>
+    </div>
+
+    <div class="table-grid">
+
+      <!-- teams -->
+      <div class="tc" id="teams">
+        <div class="tc-head">
+          <div>
+            <div class="tc-name-row"><div class="tc-dot" style="background:#2d7a4a"></div><div class="tc-name">teams</div></div>
+            <div class="tc-desc">Organisational units. Each team gets its own release type configuration.</div>
+          </div>
+        </div>
+        <div class="tc-fields">
+          <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note">gen_random_uuid()</span></div>
+          <div class="fr"><span class="fr-badge b-uk">UK</span><span class="fr-name">slug</span><span class="fr-type">varchar(80)</span><span class="fr-note">"platform-eng"</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">name</span><span class="fr-type">varchar(120)</span><span class="fr-note">NOT NULL</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">contact_email</span><span class="fr-type">varchar(255)</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">metadata</span><span class="fr-type">jsonb</span><span class="fr-note">Slack, PD, etc.</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">created_at</span><span class="fr-type">timestamptz</span><span class="fr-note">DEFAULT now()</span></div>
+        </div>
+      </div>
+
+      <!-- release_type_configs -->
+      <div class="tc" id="release_type_configs">
+        <div class="tc-head">
+          <div>
+            <div class="tc-name-row"><div class="tc-dot" style="background:#2d7a4a"></div><div class="tc-name">release_type_configs</div></div>
+            <div class="tc-desc">One config per team. Defines release shape: artifact count, naming, versioning scheme.</div>
+          </div>
+        </div>
+        <div class="tc-fields">
+          <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">team_id</span><span class="fr-type">uuid</span><span class="fr-note">→ teams.id</span></div>
+          <div class="fr"><span class="fr-badge b-uk">UK</span><span class="fr-name">slug</span><span class="fr-type">varchar(80)</span><span class="fr-note">"firmware-drop"</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">display_name</span><span class="fr-type">varchar(120)</span><span class="fr-note">NOT NULL</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">description</span><span class="fr-type">text</span><span class="fr-note"></span></div>
+          <div class="fr-divider">Artifact shape</div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">artifact_cardinality</span><span class="fr-type">varchar(10)</span><span class="fr-note"><span class="enum-chip">enum</span>single/multi</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">artifact_naming_regex</span><span class="fr-type">text</span><span class="fr-note">optional pattern check</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">allowed_file_types</span><span class="fr-type">text[]</span><span class="fr-note">[".jar",".whl"…]</span></div>
+          <div class="fr-divider">Lifecycle</div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">requires_approval</span><span class="fr-type">boolean</span><span class="fr-note">DEFAULT true</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">version_scheme</span><span class="fr-type">varchar(20)</span><span class="fr-note"><span class="enum-chip">enum</span>semver/calver/seq</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">is_active</span><span class="fr-type">boolean</span><span class="fr-note">DEFAULT true</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">created_at</span><span class="fr-type">timestamptz</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">updated_at</span><span class="fr-type">timestamptz</span><span class="fr-note"></span></div>
+        </div>
+      </div>
+
+      <!-- release_type_field_defs -->
+      <div class="tc" id="release_type_field_defs">
+        <div class="tc-head">
+          <div>
+            <div class="tc-name-row"><div class="tc-dot" style="background:#2d7a4a"></div><div class="tc-name">release_type_field_defs</div></div>
+            <div class="tc-desc">Schema of custom metadata fields a release must/can carry. Each row = one field in the team's release form.</div>
+          </div>
+        </div>
+        <div class="tc-fields">
+          <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">release_type_config_id</span><span class="fr-type">uuid</span><span class="fr-note">→ release_type_configs.id</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">field_key</span><span class="fr-type">varchar(80)</span><span class="fr-note">snake_case identifier</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">label</span><span class="fr-type">varchar(120)</span><span class="fr-note">UI display name</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">field_type</span><span class="fr-type">varchar(20)</span><span class="fr-note"><span class="enum-chip">enum</span>string/number/file/enum/bool/date</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">is_required</span><span class="fr-type">boolean</span><span class="fr-note">DEFAULT false</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">enum_options</span><span class="fr-type">text[]</span><span class="fr-note">if field_type = enum</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">validation_regex</span><span class="fr-type">text</span><span class="fr-note">client-side check</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">display_order</span><span class="fr-type">smallint</span><span class="fr-note">form ordering</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">default_value</span><span class="fr-type">text</span><span class="fr-note">nullable</span></div>
+          <div class="fr"><span class="fr-badge b-uk">UK</span><span class="fr-name">—</span><span class="fr-type"></span><span class="fr-note">(config_id, field_key)</span></div>
+        </div>
+      </div>
+
+      <!-- validation_definitions -->
+      <div class="tc" id="validation_definitions">
+        <div class="tc-head">
+          <div>
+            <div class="tc-name-row"><div class="tc-dot" style="background:#2d7a4a"></div><div class="tc-name">validation_definitions</div></div>
+            <div class="tc-desc">User-supplied validation scripts/tools. Belongs to a release type + environment pair.</div>
+          </div>
+        </div>
+        <div class="tc-fields">
+          <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">release_type_config_id</span><span class="fr-type">uuid</span><span class="fr-note">→ release_type_configs.id</span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">environment_id</span><span class="fr-type">uuid</span><span class="fr-note">→ environments.id (nullable=all)</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">name</span><span class="fr-type">varchar(120)</span><span class="fr-note">NOT NULL</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">description</span><span class="fr-type">text</span><span class="fr-note"></span></div>
+          <div class="fr-divider">Execution</div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">runner_type</span><span class="fr-type">varchar(30)</span><span class="fr-note"><span class="enum-chip">enum</span>shell/python/docker/webhook</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">script_body</span><span class="fr-type">text</span><span class="fr-note">inline script if small</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">script_url</span><span class="fr-type">text</span><span class="fr-note">S3 / git path / URL</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">script_checksum</span><span class="fr-type">varchar(128)</span><span class="fr-note">sha256 of script</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">runner_image</span><span class="fr-type">text</span><span class="fr-note">docker image if docker runner</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">timeout_seconds</span><span class="fr-type">integer</span><span class="fr-note">DEFAULT 300</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">env_vars</span><span class="fr-type">jsonb</span><span class="fr-note">injected at runtime</span></div>
+          <div class="fr-divider">Gate behaviour</div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">is_blocking</span><span class="fr-type">boolean</span><span class="fr-note">fail = stops release</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">on_failure</span><span class="fr-type">varchar(20)</span><span class="fr-note"><span class="enum-chip">enum</span>block/warn/notify</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">applies_to</span><span class="fr-type">varchar(20)</span><span class="fr-note"><span class="enum-chip">enum</span>release/artifact/file</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">run_order</span><span class="fr-type">smallint</span><span class="fr-note">execution sequence</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">is_active</span><span class="fr-type">boolean</span><span class="fr-note">DEFAULT true</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">created_by</span><span class="fr-type">varchar(255)</span><span class="fr-note">user identity</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">created_at</span><span class="fr-type">timestamptz</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">updated_at</span><span class="fr-type">timestamptz</span><span class="fr-note"></span></div>
+        </div>
+      </div>
+
+      <!-- environments -->
+      <div class="tc" id="environments">
+        <div class="tc-head">
+          <div>
+            <div class="tc-name-row"><div class="tc-dot" style="background:#2d7a4a"></div><div class="tc-name">environments</div></div>
+            <div class="tc-desc">Target deployment environments, ordered by promotion tier.</div>
+          </div>
+        </div>
+        <div class="tc-fields">
+          <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-uk">UK</span><span class="fr-name">slug</span><span class="fr-type">varchar(60)</span><span class="fr-note">dev/staging/prod</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">name</span><span class="fr-type">varchar(120)</span><span class="fr-note">NOT NULL</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">tier</span><span class="fr-type">smallint</span><span class="fr-note">0=lowest (dev)</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">requires_approval</span><span class="fr-type">boolean</span><span class="fr-note">DEFAULT false</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">config</span><span class="fr-type">jsonb</span><span class="fr-note">cluster, region…</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RELEASE LAYER -->
+    <div class="section-header" id="section-release">
+      <div class="sh-bar" style="background:#b84c2e"></div>
+      <div class="sh-text">Release Layer</div>
+      <div class="sh-rule"></div>
+      <div class="sh-count">2 tables · unchanged</div>
+    </div>
+
+    <div class="table-grid">
+
+      <!-- releases -->
+      <div class="tc" id="releases">
+        <div class="tc-head">
+          <div>
+            <div class="tc-name-row"><div class="tc-dot" style="background:#b84c2e"></div><div class="tc-name">releases</div></div>
+            <div class="tc-desc">One row per release instance. Typed via release_type_config. Custom metadata in release_field_values.</div>
+          </div>
+        </div>
+        <div class="tc-fields">
+          <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">release_type_config_id</span><span class="fr-type">uuid</span><span class="fr-note">→ release_type_configs.id</span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">owning_team_id</span><span class="fr-type">uuid</span><span class="fr-note">→ teams.id</span></div>
+          <div class="fr"><span class="fr-badge b-uk">UK</span><span class="fr-name">release_name</span><span class="fr-type">varchar(160)</span><span class="fr-note">human-readable ID</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">version</span><span class="fr-type">varchar(60)</span><span class="fr-note">per version_scheme</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">status</span><span class="fr-type">varchar(30)</span><span class="fr-note"><span class="enum-chip">enum</span>draft/validating/approved/deploying/deployed/failed/cancelled</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">target_date</span><span class="fr-type">date</span><span class="fr-note">planned go-live</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">notes</span><span class="fr-type">text</span><span class="fr-note">release notes / MD</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">created_by</span><span class="fr-type">varchar(255)</span><span class="fr-note">user identity</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">created_at</span><span class="fr-type">timestamptz</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">updated_at</span><span class="fr-type">timestamptz</span><span class="fr-note"></span></div>
+        </div>
+      </div>
+
+      <!-- release_field_values -->
+      <div class="tc" id="release_field_values">
+        <div class="tc-head">
+          <div>
+            <div class="tc-name-row"><div class="tc-dot" style="background:#b84c2e"></div><div class="tc-name">release_field_values</div></div>
+            <div class="tc-desc">EAV store for custom per-release metadata. One row per (release × field_def).</div>
+          </div>
+        </div>
+        <div class="tc-fields">
+          <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">release_id</span><span class="fr-type">uuid</span><span class="fr-note">→ releases.id</span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">field_def_id</span><span class="fr-type">uuid</span><span class="fr-note">→ release_type_field_defs.id</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">value_text</span><span class="fr-type">text</span><span class="fr-note">string / enum / bool</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">value_number</span><span class="fr-type">numeric</span><span class="fr-note">number fields</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">value_date</span><span class="fr-type">date</span><span class="fr-note">date fields</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">value_json</span><span class="fr-type">jsonb</span><span class="fr-note">complex / array fields</span></div>
+          <div class="fr"><span class="fr-badge b-uk">UK</span><span class="fr-name">—</span><span class="fr-type"></span><span class="fr-note">(release_id, field_def_id)</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ARTIFACT LAYER -->
+    <div class="section-header" id="section-artifact">
+      <div class="sh-bar" style="background:#4a3b7a"></div>
+      <div class="sh-text">Artifact Layer</div>
+      <div class="sh-rule"></div>
+      <div class="sh-count">3 tables · 2 added, 1 updated, 1 removed</div>
+    </div>
+
+    <div class="table-grid">
+
+      <!-- tools — NEW -->
+      <div class="tc is-new" id="tools">
+        <div class="tc-head">
+          <div>
+            <div class="tc-name-row"><div class="tc-dot" style="background:#4a3b7a"></div><div class="tc-name">tools</div></div>
+            <div class="tc-desc">Controlled vocabulary of build tools. Adding a tool here is the only way to use it in artifact_tools — enforces consistent naming across the org.</div>
+          </div>
+          <span class="tc-tag tag-new">New</span>
+        </div>
+        <div class="tc-fields">
+          <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note"></span></div>
+          <div class="fr highlight"><span class="fr-badge b-uk">UK</span><span class="fr-name">name</span><span class="fr-type">varchar(120)</span><span class="fr-note">e.g. "gcc", "protoc"</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">description</span><span class="fr-type">text</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">source</span><span class="fr-type">varchar(20)</span><span class="fr-note"><span class="enum-chip">enum</span>internal/external/vendored</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">repo_url</span><span class="fr-type">text</span><span class="fr-note">canonical source repo</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">owned_by_team_id</span><span class="fr-type">uuid</span><span class="fr-note">→ teams.id (nullable, internal tools)</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">is_active</span><span class="fr-type">boolean</span><span class="fr-note">DEFAULT true</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">created_at</span><span class="fr-type">timestamptz</span><span class="fr-note"></span></div>
+        </div>
+      </div>
+
+      <!-- artifacts — UPDATED -->
+      <div class="tc is-updated" id="artifacts">
+        <div class="tc-head">
+          <div>
+            <div class="tc-name-row"><div class="tc-dot" style="background:#4a3b7a"></div><div class="tc-name">artifacts</div></div>
+            <div class="tc-desc">Logical artifact identity and provenance. Tool list moved to artifact_tools. artifact_dependencies removed.</div>
+          </div>
+          <span class="tc-tag tag-updated">Updated</span>
+        </div>
+        <div class="tc-fields">
+          <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">release_id</span><span class="fr-type">uuid</span><span class="fr-note">→ releases.id</span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">release_type_config_id</span><span class="fr-type">uuid</span><span class="fr-note">→ release_type_configs.id</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">version</span><span class="fr-type">varchar(80)</span><span class="fr-note">semver / image tag</span></div>
+          <div class="fr-divider">Source provenance</div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">git_commit_sha</span><span class="fr-type">varchar(64)</span><span class="fr-note">source commit</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">git_branch</span><span class="fr-type">varchar(160)</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">build_id</span><span class="fr-type">varchar(120)</span><span class="fr-note">CI pipeline run ID</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">build_url</span><span class="fr-type">text</span><span class="fr-note">link to CI run</span></div>
+          <div class="fr-divider">Content</div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">manifest_digest</span><span class="fr-type">varchar(128)</span><span class="fr-note">combined hash of all files</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">sbom</span><span class="fr-type">jsonb</span><span class="fr-note">software bill of materials</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">labels</span><span class="fr-type">jsonb</span><span class="fr-note">arbitrary k/v tags</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">built_at</span><span class="fr-type">timestamptz</span><span class="fr-note">NOT NULL</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">created_at</span><span class="fr-type">timestamptz</span><span class="fr-note"></span></div>
+        </div>
+      </div>
+
+      <!-- artifact_files -->
+      <div class="tc" id="artifact_files">
+        <div class="tc-head">
+          <div>
+            <div class="tc-name-row"><div class="tc-dot" style="background:#4a3b7a"></div><div class="tc-name">artifact_files</div></div>
+            <div class="tc-desc">Physical files belonging to an artifact. Single-file → 1 row. Multi-file → N rows, each with its own digest and storage ref.</div>
+          </div>
+        </div>
+        <div class="tc-fields">
+          <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">artifact_id</span><span class="fr-type">uuid</span><span class="fr-note">→ artifacts.id</span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">field_def_id</span><span class="fr-type">uuid</span><span class="fr-note">→ release_type_field_defs.id (nullable)</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">filename</span><span class="fr-type">varchar(255)</span><span class="fr-note">NOT NULL</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">file_role</span><span class="fr-type">varchar(60)</span><span class="fr-note">primary/signature/checksum/metadata</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">storage_uri</span><span class="fr-type">text</span><span class="fr-note">s3:// or file:// path</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">media_type</span><span class="fr-type">varchar(120)</span><span class="fr-note">MIME type</span></div>
+          <div class="fr"><span class="fr-badge b-uk">UK</span><span class="fr-name">digest</span><span class="fr-type">varchar(128)</span><span class="fr-note">sha256 of file</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">size_bytes</span><span class="fr-type">bigint</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">signature</span><span class="fr-type">text</span><span class="fr-note">cosign / sigstore</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">uploaded_at</span><span class="fr-type">timestamptz</span><span class="fr-note">NOT NULL</span></div>
+        </div>
+      </div>
+
+      <!-- artifact_tools — NEW -->
+      <div class="tc is-new" id="artifact_tools">
+        <div class="tc-head">
+          <div>
+            <div class="tc-name-row"><div class="tc-dot" style="background:#4a3b7a"></div><div class="tc-name">artifact_tools</div></div>
+            <div class="tc-desc">Records which tools — and at which exact git version — were used to build each artifact. Many tools per artifact, each with independent versioning.</div>
+          </div>
+          <span class="tc-tag tag-new">New</span>
+        </div>
+        <div class="tc-fields">
+          <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">artifact_id</span><span class="fr-type">uuid</span><span class="fr-note">→ artifacts.id</span></div>
+          <div class="fr highlight"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">tool_id</span><span class="fr-type">uuid</span><span class="fr-note">→ tools.id</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">tool_version</span><span class="fr-type">varchar(80)</span><span class="fr-note">semver / release tag</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">git_commit_sha</span><span class="fr-type">varchar(64)</span><span class="fr-note">exact tool commit used</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">git_branch</span><span class="fr-type">varchar(160)</span><span class="fr-note">nullable</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">runner_image</span><span class="fr-type">text</span><span class="fr-note">docker image if containerised</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">invocation_flags</span><span class="fr-type">text</span><span class="fr-note">CLI flags used, for audit</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">metadata</span><span class="fr-type">jsonb</span><span class="fr-note">any extra context</span></div>
+          <div class="fr highlight"><span class="fr-badge b-uk">UK</span><span class="fr-name">—</span><span class="fr-type"></span><span class="fr-note">(artifact_id, tool_id) — no duplicate tools per artifact</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- VALIDATION LAYER -->
+    <div class="section-header" id="section-validation">
+      <div class="sh-bar" style="background:#1a6b6b"></div>
+      <div class="sh-text">Validation Layer</div>
+      <div class="sh-rule"></div>
+      <div class="sh-count">2 tables · unchanged</div>
+    </div>
+
+    <div class="table-grid">
+
+      <!-- validation_runs -->
+      <div class="tc" id="validation_runs">
+        <div class="tc-head">
+          <div>
+            <div class="tc-name-row"><div class="tc-dot" style="background:#1a6b6b"></div><div class="tc-name">validation_runs</div></div>
+            <div class="tc-desc">One run per (release × environment) pair. Spawns one result row per active validation_definition.</div>
+          </div>
+        </div>
+        <div class="tc-fields">
+          <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">release_id</span><span class="fr-type">uuid</span><span class="fr-note">→ releases.id</span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">environment_id</span><span class="fr-type">uuid</span><span class="fr-note">→ environments.id</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">triggered_by</span><span class="fr-type">varchar(255)</span><span class="fr-note">user / system actor</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">trigger_type</span><span class="fr-type">varchar(20)</span><span class="fr-note"><span class="enum-chip">enum</span>manual/auto/webhook</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">status</span><span class="fr-type">varchar(20)</span><span class="fr-note"><span class="enum-chip">enum</span>pending/running/passed/failed/cancelled</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">started_at</span><span class="fr-type">timestamptz</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">finished_at</span><span class="fr-type">timestamptz</span><span class="fr-note"></span></div>
+        </div>
+      </div>
+
+      <!-- validation_results -->
+      <div class="tc" id="validation_results">
+        <div class="tc-head">
+          <div>
+            <div class="tc-name-row"><div class="tc-dot" style="background:#1a6b6b"></div><div class="tc-name">validation_results</div></div>
+            <div class="tc-desc">Outcome of one validation_definition script within a run. Stores stdout/stderr for full audit.</div>
+          </div>
+        </div>
+        <div class="tc-fields">
+          <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">run_id</span><span class="fr-type">uuid</span><span class="fr-note">→ validation_runs.id</span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">validation_def_id</span><span class="fr-type">uuid</span><span class="fr-note">→ validation_definitions.id</span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">artifact_id</span><span class="fr-type">uuid</span><span class="fr-note">→ artifacts.id (nullable)</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">status</span><span class="fr-type">varchar(20)</span><span class="fr-note"><span class="enum-chip">enum</span>pass/fail/warn/skipped/timeout</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">exit_code</span><span class="fr-type">smallint</span><span class="fr-note">script exit code</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">stdout</span><span class="fr-type">text</span><span class="fr-note">truncated if large</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">stderr</span><span class="fr-type">text</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">log_url</span><span class="fr-type">text</span><span class="fr-note">link to full log store</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">evidence</span><span class="fr-type">jsonb</span><span class="fr-note">structured output / metrics</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">duration_ms</span><span class="fr-type">integer</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">evaluated_at</span><span class="fr-type">timestamptz</span><span class="fr-note">NOT NULL</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- WORKFLOW LAYER -->
+    <div class="section-header" id="section-workflow">
+      <div class="sh-bar" style="background:#7a5c1e"></div>
+      <div class="sh-text">Workflow Layer</div>
+      <div class="sh-rule"></div>
+      <div class="sh-count">3 tables · unchanged</div>
+    </div>
+
+    <div class="table-grid">
+
+      <!-- approvals -->
+      <div class="tc" id="approvals">
+        <div class="tc-head">
+          <div>
+            <div class="tc-name-row"><div class="tc-dot" style="background:#7a5c1e"></div><div class="tc-name">approvals</div></div>
+            <div class="tc-desc">Sign-off records per team per environment.</div>
+          </div>
+        </div>
+        <div class="tc-fields">
+          <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">release_id</span><span class="fr-type">uuid</span><span class="fr-note">→ releases.id</span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">environment_id</span><span class="fr-type">uuid</span><span class="fr-note">→ environments.id</span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">approving_team_id</span><span class="fr-type">uuid</span><span class="fr-note">→ teams.id</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">approver_identity</span><span class="fr-type">varchar(255)</span><span class="fr-note">SSO / email</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">decision</span><span class="fr-type">varchar(20)</span><span class="fr-note"><span class="enum-chip">enum</span>approved/rejected/deferred</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">comment</span><span class="fr-type">text</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">decided_at</span><span class="fr-type">timestamptz</span><span class="fr-note">NOT NULL</span></div>
+        </div>
+      </div>
+
+      <!-- deployments -->
+      <div class="tc" id="deployments">
+        <div class="tc-head">
+          <div>
+            <div class="tc-name-row"><div class="tc-dot" style="background:#7a5c1e"></div><div class="tc-name">deployments</div></div>
+            <div class="tc-desc">Execution records per release × environment. Rollback chain via self-reference.</div>
+          </div>
+        </div>
+        <div class="tc-fields">
+          <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">release_id</span><span class="fr-type">uuid</span><span class="fr-note">→ releases.id</span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">environment_id</span><span class="fr-type">uuid</span><span class="fr-note">→ environments.id</span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">artifact_id</span><span class="fr-type">uuid</span><span class="fr-note">→ artifacts.id</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">status</span><span class="fr-type">varchar(20)</span><span class="fr-note"><span class="enum-chip">enum</span>queued/running/success/failed</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">strategy</span><span class="fr-type">varchar(40)</span><span class="fr-note">rolling/blue-green/canary</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">deployed_by</span><span class="fr-type">varchar(255)</span><span class="fr-note">actor identity</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">started_at</span><span class="fr-type">timestamptz</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">finished_at</span><span class="fr-type">timestamptz</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">rollback_of</span><span class="fr-type">uuid</span><span class="fr-note">→ deployments.id (self)</span></div>
+        </div>
+      </div>
+
+      <!-- release_events -->
+      <div class="tc" id="release_events">
+        <div class="tc-head">
+          <div>
+            <div class="tc-name-row"><div class="tc-dot" style="background:#6b3a3a"></div><div class="tc-name">release_events</div></div>
+            <div class="tc-desc">Immutable append-only activity log. Never update or delete rows.</div>
+          </div>
+        </div>
+        <div class="tc-fields">
+          <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">release_id</span><span class="fr-type">uuid</span><span class="fr-note">→ releases.id</span></div>
+          <div class="fr"><span class="fr-badge b-idx">IX</span><span class="fr-name">event_type</span><span class="fr-type">varchar(60)</span><span class="fr-note">status_changed, file_uploaded…</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">actor_identity</span><span class="fr-type">varchar(255)</span><span class="fr-note">who or what</span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">actor_team_id</span><span class="fr-type">uuid</span><span class="fr-note">→ teams.id (nullable)</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">payload</span><span class="fr-type">jsonb</span><span class="fr-note">before/after state snapshot</span></div>
+          <div class="fr"><span class="fr-badge b-idx">IX</span><span class="fr-name">occurred_at</span><span class="fr-type">timestamptz</span><span class="fr-note">NOT NULL</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RELATIONSHIPS -->
+    <div class="rel-block" style="margin-top:40px;">
+      <div class="rel-head"><div class="rel-head-title">Key Relationships — Artifact Layer focus</div></div>
+      <table class="rel-table">
+        <thead>
+          <tr><th>Relationship</th><th>Cardinality</th><th>Constraint / Note</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>tools.name</strong></td>
+            <td><span class="rel-badge rb-11">unique</span></td>
+            <td>Controlled vocabulary — only way to introduce a tool name into the system</td>
+          </tr>
+          <tr>
+            <td>tools → artifact_tools</td>
+            <td><span class="rel-badge rb-1m">1 → M</span></td>
+            <td>One tool can appear across many artifact builds at different versions</td>
+          </tr>
+          <tr>
+            <td>artifacts → artifact_tools</td>
+            <td><span class="rel-badge rb-1m">1 → M</span></td>
+            <td>One artifact was built with potentially many tools</td>
+          </tr>
+          <tr>
+            <td><strong>artifact_tools (artifact_id, tool_id)</strong></td>
+            <td><span class="rel-badge rb-11">unique</span></td>
+            <td>A tool cannot appear twice on the same artifact — prevents duplicates</td>
+          </tr>
+          <tr>
+            <td>artifacts → artifact_files</td>
+            <td><span class="rel-badge rb-1m">1 → M</span></td>
+            <td>Single-file: 1 row. Multi-file: N rows with independent digests</td>
+          </tr>
+          <tr>
+            <td>tools.owned_by_team_id → teams</td>
+            <td><span class="rel-badge rb-11">N → 1</span></td>
+            <td>Internal tools are owned by a team; external tools leave this null</td>
+          </tr>
+          <tr>
+            <td><em>artifact_dependencies</em></td>
+            <td>—</td>
+            <td style="color:#b45309;">Removed. Dependency graph tracking out of scope.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="height:64px"></div>
+  </main>
+</div>
+
+<script>
+  function nav(id, el) {
+    const target = document.getElementById(id);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      document.querySelectorAll('.tc').forEach(c => c.classList.remove('focus'));
+      target.classList.add('focus');
+      setTimeout(() => target.classList.remove('focus'), 2000);
+    }
+    document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
+    if (el) el.classList.add('active');
+  }
+
+  const tableIds = ['teams','release_type_configs','release_type_field_defs','validation_definitions',
+    'environments','releases','release_field_values','tools','artifacts','artifact_files',
+    'artifact_tools','validation_runs','validation_results','approvals','deployments','release_events'];
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
+        const match = document.querySelector(`.sb-item[onclick*="'${e.target.id}'"]`);
+        if (match) match.classList.add('active');
+      }
+    });
+  }, { threshold: 0.5 });
+
+  tableIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) observer.observe(el);
+  });
+</script>
+</body>
+</html>
