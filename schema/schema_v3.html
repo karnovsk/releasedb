@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ReleaseDB — Schema v3</title>
+<title>ReleaseDB — Schema</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,300&display=swap');
 
@@ -70,18 +70,6 @@ body {
   max-width: 540px;
   line-height: 1.6;
 }
-.header-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-.hbadge {
-  font-size: 9px;
-  padding: 3px 8px;
-  border-radius: 3px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.hbadge-removed { background: #3f1a1a; color: #fca5a5; border: 1px solid #7f1d1d; }
-.hbadge-added   { background: #1a3a1a; color: #86efac; border: 1px solid #14532d; }
-.hbadge-updated { background: #1a2a3a; color: #93c5fd; border: 1px solid #1e3a8a; }
 
 .legend {
   display: flex;
@@ -131,39 +119,9 @@ body {
 .sb-item:hover { background: var(--paper2); color: var(--ink); }
 .sb-item.active { background: var(--paper); color: var(--ink); border-left-color: var(--rust); font-weight: 500; }
 .sb-pip { width: 7px; height: 7px; border-radius: 2px; flex-shrink: 0; }
-.sb-badge {
-  margin-left: auto; font-size: 8px; padding: 1px 5px;
-  border-radius: 2px; font-weight: 700; letter-spacing: 0.04em;
-}
-.sb-new     { background: #1a3a1a; color: #86efac; }
-.sb-updated { background: #1a2a3a; color: #93c5fd; }
-.sb-removed { background: #3a1a1a; color: #fca5a5; text-decoration: line-through; }
 
 /* CONTENT */
 .content { padding: 40px 48px 80px; overflow-y: auto; }
-
-/* CHANGELOG CALLOUT */
-.changelog {
-  background: var(--ink);
-  color: var(--paper);
-  border-radius: 8px;
-  padding: 20px 28px;
-  margin-bottom: 36px;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 16px 32px;
-}
-.cl-title {
-  font-family: 'Fraunces', serif;
-  font-size: 13px; font-weight: 700;
-  color: #e8703a; letter-spacing: 0.04em;
-  margin-bottom: 10px; grid-column: 1/-1;
-}
-.cl-item { display: flex; gap: 10px; font-size: 11px; color: #d1d5db; line-height: 1.55; }
-.cl-icon {
-  font-size: 14px; flex-shrink: 0; line-height: 1.2;
-}
-.cl-item strong { color: var(--paper); font-weight: 500; }
 
 /* SECTION HEADER */
 .section-header {
@@ -187,8 +145,6 @@ body {
 }
 .tc:hover { border-color: var(--border2); box-shadow: 0 4px 20px rgba(14,17,23,0.08); }
 .tc.focus { border-color: var(--rust); box-shadow: 0 0 0 2px rgba(184,76,46,0.12); }
-.tc.is-new { border-left: 3px solid #16a34a; }
-.tc.is-updated { border-left: 3px solid #2563eb; }
 
 .tc-head {
   padding: 13px 16px 11px; border-bottom: 1px solid var(--faint);
@@ -198,13 +154,6 @@ body {
 .tc-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; margin-top: 1px; }
 .tc-name { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 700; color: var(--ink); }
 .tc-desc { font-size: 10px; color: var(--muted); margin-top: 3px; font-weight: 300; line-height: 1.45; max-width: 300px; }
-
-.tc-tag {
-  font-size: 9px; padding: 2px 7px; border-radius: 3px;
-  font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; flex-shrink: 0; margin-top: 2px;
-}
-.tag-new     { background: #f0fdf4; color: #14532d; border: 1px solid #bbf7d0; }
-.tag-updated { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
 
 /* FIELD ROWS */
 .tc-fields { padding: 4px 0; }
@@ -278,17 +227,11 @@ body {
 
 <div class="header">
   <div>
-    <div class="header-eyebrow">Database Schema Design · v3.0</div>
+    <div class="header-eyebrow">Database Schema</div>
     <h1>Release<em>DB</em></h1>
     <div class="header-sub">
       Inter-team release management · configurable release types per team ·
       user-supplied validation scripts · artifact lineage &amp; toolchain tracking
-    </div>
-    <div class="header-badges">
-      <span class="hbadge hbadge-removed">− artifact_dependencies removed</span>
-      <span class="hbadge hbadge-added">+ tools lookup table added</span>
-      <span class="hbadge hbadge-added">+ artifact_tools added</span>
-      <span class="hbadge hbadge-updated">↻ artifacts updated</span>
     </div>
   </div>
   <div class="legend">
@@ -321,13 +264,10 @@ body {
 
     <div class="sb-section">
       <div class="sb-label">Artifact Layer</div>
-      <div class="sb-item" onclick="nav('tools',this)"><div class="sb-pip" style="background:#4a3b7a"></div>tools <span class="sb-badge sb-new">new</span></div>
-      <div class="sb-item" onclick="nav('artifacts',this)"><div class="sb-pip" style="background:#4a3b7a"></div>artifacts <span class="sb-badge sb-updated">updated</span></div>
+      <div class="sb-item" onclick="nav('tools',this)"><div class="sb-pip" style="background:#4a3b7a"></div>tools</div>
+      <div class="sb-item" onclick="nav('artifacts',this)"><div class="sb-pip" style="background:#4a3b7a"></div>artifacts</div>
       <div class="sb-item" onclick="nav('artifact_files',this)"><div class="sb-pip" style="background:#4a3b7a"></div>artifact_files</div>
-      <div class="sb-item" onclick="nav('artifact_tools',this)"><div class="sb-pip" style="background:#4a3b7a"></div>artifact_tools <span class="sb-badge sb-new">new</span></div>
-      <div class="sb-item" style="opacity:0.35; cursor:default; text-decoration:line-through;">
-        <div class="sb-pip" style="background:#999"></div>artifact_dependencies <span class="sb-badge sb-removed">removed</span>
-      </div>
+      <div class="sb-item" onclick="nav('artifact_tools',this)"><div class="sb-pip" style="background:#4a3b7a"></div>artifact_tools</div>
     </div>
 
     <div class="sb-section">
@@ -343,39 +283,17 @@ body {
       <div class="sb-item" onclick="nav('release_events',this)"><div class="sb-pip" style="background:#6b3a3a"></div>release_events</div>
     </div>
 
-    <div style="padding:20px 16px 0;font-size:9px;color:#b0a89a;line-height:1.8;border-top:1px solid var(--border);margin-top:16px;">
-      <span style="color:#86efac">▌</span> new table<br>
-      <span style="color:#93c5fd">▌</span> updated table<br>
-      <span style="color:#fca5a5;text-decoration:line-through">▌</span> removed
-    </div>
   </nav>
 
   <!-- CONTENT -->
   <main class="content">
-
-    <!-- CHANGELOG -->
-    <div class="changelog">
-      <div class="cl-title">↗ v3 Changes</div>
-      <div class="cl-item">
-        <span class="cl-icon">−</span>
-        <span><strong>artifact_dependencies removed.</strong> Dependency graph tracking not required for this tool.</span>
-      </div>
-      <div class="cl-item">
-        <span class="cl-icon">+</span>
-        <span><strong>tools lookup table added.</strong> Canonical registry of build tools with controlled vocabulary — enforces spelling consistency and stores source/ownership metadata.</span>
-      </div>
-      <div class="cl-item">
-        <span class="cl-icon">+</span>
-        <span><strong>artifact_tools added.</strong> Links each artifact to the tools used to build it. Each tool carries its own git version. Unique constraint on <code>(artifact_id, tool_id)</code> prevents duplicates.</span>
-      </div>
-    </div>
 
     <!-- CONFIG LAYER -->
     <div class="section-header" id="section-config">
       <div class="sh-bar" style="background:#2d7a4a"></div>
       <div class="sh-text">Config Layer</div>
       <div class="sh-rule"></div>
-      <div class="sh-count">5 tables · unchanged</div>
+      <div class="sh-count">5 tables</div>
     </div>
 
     <div class="table-grid">
@@ -507,7 +425,7 @@ body {
       <div class="sh-bar" style="background:#b84c2e"></div>
       <div class="sh-text">Release Layer</div>
       <div class="sh-rule"></div>
-      <div class="sh-count">2 tables · unchanged</div>
+      <div class="sh-count">2 tables</div>
     </div>
 
     <div class="table-grid">
@@ -562,19 +480,18 @@ body {
       <div class="sh-bar" style="background:#4a3b7a"></div>
       <div class="sh-text">Artifact Layer</div>
       <div class="sh-rule"></div>
-      <div class="sh-count">3 tables · 2 added, 1 updated, 1 removed</div>
+      <div class="sh-count">4 tables</div>
     </div>
 
     <div class="table-grid">
 
-      <!-- tools — NEW -->
-      <div class="tc is-new" id="tools">
+      <!-- tools -->
+      <div class="tc" id="tools">
         <div class="tc-head">
           <div>
             <div class="tc-name-row"><div class="tc-dot" style="background:#4a3b7a"></div><div class="tc-name">tools</div></div>
             <div class="tc-desc">Controlled vocabulary of build tools. Adding a tool here is the only way to use it in artifact_tools — enforces consistent naming across the org.</div>
           </div>
-          <span class="tc-tag tag-new">New</span>
         </div>
         <div class="tc-fields">
           <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note"></span></div>
@@ -588,14 +505,13 @@ body {
         </div>
       </div>
 
-      <!-- artifacts — UPDATED -->
-      <div class="tc is-updated" id="artifacts">
+      <!-- artifacts -->
+      <div class="tc" id="artifacts">
         <div class="tc-head">
           <div>
             <div class="tc-name-row"><div class="tc-dot" style="background:#4a3b7a"></div><div class="tc-name">artifacts</div></div>
-            <div class="tc-desc">Logical artifact identity and provenance. Tool list moved to artifact_tools. artifact_dependencies removed.</div>
+            <div class="tc-desc">Logical artifact identity and provenance. Tool usage tracked in artifact_tools.</div>
           </div>
-          <span class="tc-tag tag-updated">Updated</span>
         </div>
         <div class="tc-fields">
           <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note"></span></div>
@@ -640,14 +556,13 @@ body {
         </div>
       </div>
 
-      <!-- artifact_tools — NEW -->
-      <div class="tc is-new" id="artifact_tools">
+      <!-- artifact_tools -->
+      <div class="tc" id="artifact_tools">
         <div class="tc-head">
           <div>
             <div class="tc-name-row"><div class="tc-dot" style="background:#4a3b7a"></div><div class="tc-name">artifact_tools</div></div>
             <div class="tc-desc">Records which tools — and at which exact git version — were used to build each artifact. Many tools per artifact, each with independent versioning.</div>
           </div>
-          <span class="tc-tag tag-new">New</span>
         </div>
         <div class="tc-fields">
           <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note"></span></div>
@@ -670,7 +585,7 @@ body {
       <div class="sh-bar" style="background:#1a6b6b"></div>
       <div class="sh-text">Validation Layer</div>
       <div class="sh-rule"></div>
-      <div class="sh-count">2 tables · unchanged</div>
+      <div class="sh-count">2 tables</div>
     </div>
 
     <div class="table-grid">
@@ -726,7 +641,7 @@ body {
       <div class="sh-bar" style="background:#7a5c1e"></div>
       <div class="sh-text">Workflow Layer</div>
       <div class="sh-rule"></div>
-      <div class="sh-count">3 tables · unchanged</div>
+      <div class="sh-count">3 tables</div>
     </div>
 
     <div class="table-grid">
@@ -796,7 +711,7 @@ body {
 
     <!-- RELATIONSHIPS -->
     <div class="rel-block" style="margin-top:40px;">
-      <div class="rel-head"><div class="rel-head-title">Key Relationships — Artifact Layer focus</div></div>
+      <div class="rel-head"><div class="rel-head-title">Key Relationships</div></div>
       <table class="rel-table">
         <thead>
           <tr><th>Relationship</th><th>Cardinality</th><th>Constraint / Note</th></tr>
@@ -831,11 +746,6 @@ body {
             <td>tools.owned_by_team_id → teams</td>
             <td><span class="rel-badge rb-11">N → 1</span></td>
             <td>Internal tools are owned by a team; external tools leave this null</td>
-          </tr>
-          <tr>
-            <td><em>artifact_dependencies</em></td>
-            <td>—</td>
-            <td style="color:#b45309;">Removed. Dependency graph tracking out of scope.</td>
           </tr>
         </tbody>
       </table>
