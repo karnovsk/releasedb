@@ -12,7 +12,8 @@ ReleaseDB sits above Jenkins, Artifactory, and S3. It tracks identity, provenanc
 releasedb/
 ├── docs/
 │   ├── USER_GUIDE.md          ← End-to-end usage guide
-│   └── SYNC.md                ← Config-as-code setup guide (releasedb-sync)
+│   ├── SYNC.md                ← Config-as-code setup guide (releasedb-sync)
+│   └── executive-overview.html ← Executive presentation (open in browser)
 ├── schema/
 │   ├── SCHEMA.md              ← ER diagram (renders in GitHub / VS Code)
 │   ├── schema_v3.html         ← Interactive schema reference (open in browser)
@@ -42,9 +43,10 @@ releasedb/
 | [User Guide](docs/USER_GUIDE.md) | Configuring release types, registering artifacts, writing validators, running validation, approvals, deployments |
 | [Sync Guide](docs/SYNC.md) | Config-as-code setup with `releasedb-sync` — YAML schema, CLI reference, Jenkins integration |
 | [Schema (ER diagram)](schema/SCHEMA.md) | Mermaid ER diagram — all 15 tables and their relationships |
-| [Schema (interactive)](schema/schema_v3.html) | Open in a browser for the navigable, layered schema reference |
+| [Schema (interactive)](https://karnovsk.github.io/releasedb/schema/schema_v3.html) | Navigable, layered schema reference — open in a browser |
 | [Schema (DDL)](schema/schema.sql) | Executable PostgreSQL DDL — the source of truth for the database |
 | [SDK README](sdk/README.md) | Python package quickstart and API reference |
+| [Executive Overview](https://karnovsk.github.io/releasedb/docs/executive-overview.html) | 10-slide presentation: problem, capabilities, stakeholders, current state, open decisions |
 
 ---
 
