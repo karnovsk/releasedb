@@ -146,6 +146,10 @@ body {
 .tc:hover { border-color: var(--border2); box-shadow: 0 4px 20px rgba(14,17,23,0.08); }
 .tc.focus { border-color: var(--rust); box-shadow: 0 0 0 2px rgba(184,76,46,0.12); }
 
+/* Hub table emphasis */
+.tc.is-hub { border-color: var(--rust); border-left: 4px solid var(--rust); }
+.tag-hub { background: #0e1117; color: #e8703a; border: 1px solid #b84c2e; }
+
 .tc-head {
   padding: 13px 16px 11px; border-bottom: 1px solid var(--faint);
   display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
@@ -154,6 +158,11 @@ body {
 .tc-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; margin-top: 1px; }
 .tc-name { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 700; color: var(--ink); }
 .tc-desc { font-size: 10px; color: var(--muted); margin-top: 3px; font-weight: 300; line-height: 1.45; max-width: 300px; }
+
+.tc-tag {
+  font-size: 9px; padding: 2px 7px; border-radius: 3px;
+  font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; flex-shrink: 0; margin-top: 2px;
+}
 
 /* FIELD ROWS */
 .tc-fields { padding: 4px 0; }
@@ -208,6 +217,12 @@ body {
 .rel-table td { padding: 9px 18px; border-bottom: 1px solid var(--faint); vertical-align: middle; }
 .rel-table tr:last-child td { border-bottom: none; }
 .rel-table tr:hover td { background: #fafaf8; }
+.rel-group td {
+  background: var(--faint); font-size: 8px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted); padding: 6px 18px 5px;
+  border-bottom: 1px solid var(--border);
+}
+.rel-group:hover td { background: var(--faint); }
 
 .rel-badge {
   font-size: 9px; padding: 2px 7px; border-radius: 3px;
@@ -431,12 +446,13 @@ body {
     <div class="table-grid">
 
       <!-- releases -->
-      <div class="tc" id="releases">
+      <div class="tc is-hub" id="releases">
         <div class="tc-head">
           <div>
             <div class="tc-name-row"><div class="tc-dot" style="background:#b84c2e"></div><div class="tc-name">releases</div></div>
-            <div class="tc-desc">One row per release instance. Typed via release_type_config. Custom metadata in release_field_values.</div>
+            <div class="tc-desc">One row per release instance. Typed via release_type_config. Custom metadata in release_field_values. All downstream tables reference this row.</div>
           </div>
+          <span class="tc-tag tag-hub">Hub</span>
         </div>
         <div class="tc-fields">
           <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note"></span></div>
@@ -655,7 +671,7 @@ body {
           </div>
         </div>
         <div class="tc-fields">
-          <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note"></span></div>
+          <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-note"></span><span class="fr-type">uuid</span></div>
           <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">release_id</span><span class="fr-type">uuid</span><span class="fr-note">→ releases.id</span></div>
           <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">environment_id</span><span class="fr-type">uuid</span><span class="fr-note">→ environments.id</span></div>
           <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">approving_team_id</span><span class="fr-type">uuid</span><span class="fr-note">→ teams.id</span></div>
@@ -711,42 +727,92 @@ body {
 
     <!-- RELATIONSHIPS -->
     <div class="rel-block" style="margin-top:40px;">
-      <div class="rel-head"><div class="rel-head-title">Key Relationships</div></div>
+      <div class="rel-head"><div class="rel-head-title">releases — Key Relationships</div></div>
       <table class="rel-table">
         <thead>
-          <tr><th>Relationship</th><th>Cardinality</th><th>Constraint / Note</th></tr>
+          <tr><th>Relationship</th><th>Cardinality</th><th>Note</th></tr>
         </thead>
         <tbody>
+
+          <!-- ── Outbound: releases depends on ──────────────────────── -->
+          <tr class="rel-group"><td colspan="3">releases references (upstream dependencies)</td></tr>
           <tr>
-            <td><strong>tools.name</strong></td>
-            <td><span class="rel-badge rb-11">unique</span></td>
-            <td>Controlled vocabulary — only way to introduce a tool name into the system</td>
+            <td>releases.release_type_config_id → <strong>release_type_configs</strong></td>
+            <td><span class="rel-badge rb-11">M → 1</span></td>
+            <td>Determines versioning scheme, artifact shape, allowed file types. Transitively pulls in field defs and validation definitions.</td>
           </tr>
           <tr>
-            <td>tools → artifact_tools</td>
+            <td>releases.owning_team_id → <strong>teams</strong></td>
+            <td><span class="rel-badge rb-11">M → 1</span></td>
+            <td>Owning team. A team is also linked transitively through release_type_config.</td>
+          </tr>
+
+          <!-- ── Inbound: tables that reference releases ─────────────── -->
+          <tr class="rel-group"><td colspan="3">tables referencing releases (downstream)</td></tr>
+          <tr>
+            <td><strong>release_field_values</strong>.release_id → releases</td>
             <td><span class="rel-badge rb-1m">1 → M</span></td>
-            <td>One tool can appear across many artifact builds at different versions</td>
+            <td>Custom metadata per release. Unique on (release_id, field_def_id) — one value per field per release.</td>
           </tr>
           <tr>
-            <td>artifacts → artifact_tools</td>
+            <td><strong>artifacts</strong>.release_id → releases</td>
             <td><span class="rel-badge rb-1m">1 → M</span></td>
-            <td>One artifact was built with potentially many tools</td>
+            <td>Physical build artifacts. A release may contain one or many artifacts depending on release_type_config.artifact_cardinality.</td>
           </tr>
           <tr>
-            <td><strong>artifact_tools (artifact_id, tool_id)</strong></td>
-            <td><span class="rel-badge rb-11">unique</span></td>
-            <td>A tool cannot appear twice on the same artifact — prevents duplicates</td>
-          </tr>
-          <tr>
-            <td>artifacts → artifact_files</td>
+            <td><strong>validation_runs</strong>.release_id → releases</td>
             <td><span class="rel-badge rb-1m">1 → M</span></td>
-            <td>Single-file: 1 row. Multi-file: N rows with independent digests</td>
+            <td>One run per (release × environment) trigger. Multiple runs allowed per pair (manual re-runs, auto retries).</td>
           </tr>
           <tr>
-            <td>tools.owned_by_team_id → teams</td>
-            <td><span class="rel-badge rb-11">N → 1</span></td>
-            <td>Internal tools are owned by a team; external tools leave this null</td>
+            <td><strong>approvals</strong>.release_id → releases</td>
+            <td><span class="rel-badge rb-1m">1 → M</span></td>
+            <td>Sign-off records. One row per (release × environment × approving_team) decision event.</td>
           </tr>
+          <tr>
+            <td><strong>deployments</strong>.release_id → releases</td>
+            <td><span class="rel-badge rb-1m">1 → M</span></td>
+            <td>Execution records per environment. A release can be deployed multiple times (rollbacks, promotions).</td>
+          </tr>
+          <tr>
+            <td><strong>release_events</strong>.release_id → releases</td>
+            <td><span class="rel-badge rb-1m">1 → M</span></td>
+            <td>Append-only audit log. No updates or deletes enforced by DB rule. Captures every status change, upload, decision.</td>
+          </tr>
+
+          <!-- ── Second-level: notable sub-relationships ─────────────── -->
+          <tr class="rel-group"><td colspan="3">second-level relationships (through downstream tables)</td></tr>
+          <tr>
+            <td>artifacts → <strong>artifact_files</strong></td>
+            <td><span class="rel-badge rb-1m">1 → M</span></td>
+            <td>Physical files per artifact. Unique on (artifact_id, digest) — the same binary may appear across multiple artifacts.</td>
+          </tr>
+          <tr>
+            <td>artifacts → <strong>artifact_tools</strong></td>
+            <td><span class="rel-badge rb-1m">1 → M</span></td>
+            <td>Build tools used per artifact at specific git commits. Unique on (artifact_id, tool_id).</td>
+          </tr>
+          <tr>
+            <td>artifact_tools.tool_id → <strong>tools</strong></td>
+            <td><span class="rel-badge rb-11">M → 1</span></td>
+            <td>Controlled vocabulary. tools.name is globally unique — enforces spelling consistency across the org.</td>
+          </tr>
+          <tr>
+            <td>validation_runs → <strong>validation_results</strong></td>
+            <td><span class="rel-badge rb-1m">1 → M</span></td>
+            <td>One result per active validation_definition script per run. Stores exit code, stdout/stderr, and structured evidence.</td>
+          </tr>
+          <tr>
+            <td>deployments.rollback_of → <strong>deployments</strong></td>
+            <td><span class="rel-badge rb-self">self</span></td>
+            <td>Optional self-reference. Chains a rollback deployment back to the deployment it reverted.</td>
+          </tr>
+          <tr>
+            <td>validation_results.artifact_id → <strong>artifacts</strong></td>
+            <td><span class="rel-badge rb-11">M → 1</span></td>
+            <td>Nullable. Set when the validation applies_to = artifact, linking the result to the specific artifact evaluated.</td>
+          </tr>
+
         </tbody>
       </table>
     </div>
