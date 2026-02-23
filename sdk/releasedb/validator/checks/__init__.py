@@ -1,5 +1,5 @@
 """
-releasedb_validator.checks
+releasedb.validator.checks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 Built-in check helpers. Each returns a CheckResult.
 Teams call these from their validate() method rather than writing
@@ -29,7 +29,7 @@ from typing import Any
 
 import requests
 
-from releasedb_validator.reporting import CheckResult, ResultStatus
+from releasedb.validator.reporting import CheckResult, ResultStatus
 
 
 # ── File checks ───────────────────────────────────────────────────────────────

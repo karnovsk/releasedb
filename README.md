@@ -1,6 +1,6 @@
 # ReleaseDB
 
-Inter-team release management · configurable release types · user-supplied validation · artifact lineage tracking.
+Inter-team release management · configurable release types · user-supplied validation · release lineage tracking.
 
 ReleaseDB sits above Jenkins, Artifactory, and S3. It tracks identity, provenance, validation results, approvals, and deployments — without replacing any of them.
 
@@ -18,12 +18,19 @@ releasedb/
 │   ├── SCHEMA.md              ← ER diagram (renders in GitHub / VS Code)
 │   ├── schema_v3.html         ← Interactive schema reference (open in browser)
 │   └── schema.sql             ← Executable PostgreSQL DDL
+├── api/
+│   ├── main.py                ← FastAPI application entrypoint
+│   ├── database.py            ← asyncpg connection pool
+│   ├── dependencies.py        ← Auth and DB injection
+│   ├── models/                ← Pydantic request/response models
+│   └── routers/               ← One file per resource group
 ├── sdk/
-│   ├── releasedb_validator/   ← Python package source
-│   │   ├── sync/              ← releasedb-sync tool (config-as-code)
-│   │   ├── checks/            ← Built-in validation checks
-│   │   ├── context/           ← Runtime context (artifact, release, runner)
-│   │   └── reporting/         ← Result models and API reporter
+│   ├── releasedb/             ← Python package source
+│   │   ├── client.py          ← ReleaseDBClient (full API access)
+│   │   ├── models.py          ← Pydantic response models
+│   │   ├── exceptions.py      ← APIError, NotFoundError
+│   │   ├── validator/         ← Optional validator SDK
+│   │   └── sync/              ← releasedb-sync tool (config-as-code)
 │   ├── migrations/            ← Alembic database migrations
 │   │   └── versions/
 │   │       └── 0001_initial_schema.py
@@ -80,14 +87,66 @@ integration examples, and the team onboarding checklist.
 ## SDK Install
 
 ```bash
-pip install releasedb-validator
+pip install releasedb
 ```
 
-### Writing a Validation Script
+The `releasedb` package provides two capabilities:
+
+1. **Python client** — query releases, submit artifacts, trigger validation, manage approvals and deployments via `ReleaseDBClient`.
+2. **Validator SDK** (optional) — write validation scripts executed by the ReleaseDB runner. Only needed if ReleaseDB runs your validation scripts for you.
+
+### Python Client Quickstart
 
 ```python
-from releasedb_validator import Validator
-from releasedb_validator.checks import file_exists, checksum_matches
+from releasedb import ReleaseDBClient
+
+client = ReleaseDBClient(
+    api_url="https://releasedb.internal",
+    api_token="tok_...",
+)
+
+# Create a release
+release = client.create_release(
+    release_type_config_id="<uuid>",
+    release_name="firmware-2025-q2-drop3",
+    version="2.4.1",
+    created_by="ci-pipeline",
+    field_values={"expected_sha256": "abc123...", "jira_ticket": "FW-1234"},
+)
+
+# Submit an artifact from CI
+artifact = client.submit_artifact(
+    release_id=release.id,
+    version="2.4.1",
+    git_commit_sha="abc123",
+    git_branch="main",
+    build_id="jenkins-1234",
+    files=[
+        {
+            "filename": "firmware.bin",
+            "digest": "sha256:...",
+            "size_bytes": 512000,
+            "file_role": "primary",
+            "storage_uri": "s3://my-bucket/fw/firmware.bin",
+        }
+    ],
+)
+
+# Trigger validation
+run = client.trigger_validation(release.id, environment="staging")
+```
+
+See the [SDK README](sdk/README.md) for the full client API reference.
+
+### (Optional) Writing a Validation Script
+
+> Validation scripts are **optional**. Your team may validate in your own environment
+> and report results via the API, or skip validation entirely if your release type
+> doesn't require it.
+
+```python
+from releasedb.validator import Validator
+from releasedb.validator.checks import file_exists, checksum_matches
 
 class FirmwareIntegrityCheck(Validator):
     name = "firmware-integrity-check"
@@ -112,6 +171,20 @@ releasedb-validate my_validator.py --dry-run \
     --version 2024.03.1 \
     --files-dir ./test-artifacts/
 ```
+
+---
+
+## API Server
+
+```bash
+cd api/
+pip install -r requirements.txt
+export DATABASE_URL=postgresql://user:pass@localhost/releasedb
+export RELEASEDB_API_TOKEN=tok_...
+uvicorn api.main:app --reload
+```
+
+Interactive API docs at `http://localhost:8000/docs`.
 
 ---
 
@@ -153,23 +226,22 @@ pytest tests/ -v
 
 ## Open Items
 
-### 1. Artifact lineage
+### 1. Release lineage
 
-Track which artifact was derived from a previous artifact (parent → child).
+Track which release was derived from or supersedes a previous release (parent → child).
 
-Covers firmware layering, container images built FROM a base image, multi-stage builds, and security response ("which derived artifacts need a rebuild?"). The removed `artifact_dependencies` table was too broad; this is the targeted replacement — a single nullable self-referencing FK:
+Covers hotfix releases that supersede a base release, patch chains (v1.2.3 supersedes v1.2.2), cross-team deployment ordering (release B cannot deploy before release A), and security response ("which subsequent releases are affected by this vulnerability?"). A single nullable self-referencing FK on `releases`:
 
 ```sql
 -- Migration needed
-ALTER TABLE artifacts
-    ADD COLUMN derived_from_artifact_id uuid REFERENCES artifacts(id) ON DELETE SET NULL;
-CREATE INDEX ON artifacts (derived_from_artifact_id);
+ALTER TABLE releases
+    ADD COLUMN derived_from_release_id uuid REFERENCES releases(id) ON DELETE SET NULL;
+CREATE INDEX ON releases (derived_from_release_id);
 ```
 
-Recursive lineage queries can walk the chain with a CTE. Open questions: do we need multiple parents (merge builds)? Should circularity be prevented at DB or application level? Should `derived_from` be settable via CI pipeline or also via `releasedb.yaml`?
+Recursive lineage queries can walk the chain with a CTE. Open questions: do we need multiple parents (merge scenarios, cross-team dependencies)? Should circularity be prevented at DB or application level? Should `derived_from` be settable at release creation time or patchable afterwards?
 
-SDK impact: `ArtifactContext.parent_artifact_id`, `RELEASEDB_PARENT_ARTIFACT_ID` env var injected by runner.
-API impact: `POST /api/artifacts` accepts `derived_from_artifact_id`; `GET /api/artifacts/:id/lineage` returns ancestor chain.
+API impact: `POST /api/releases` accepts `derived_from_release_id`; `GET /api/releases/:id/lineage` returns ancestor chain.
 
 ---
 
@@ -187,9 +259,9 @@ Decision needed: is this a display/query concern (filter by deployed releases) o
 
 ---
 
-### 3. Artifact and lineage dashboard
+### 3. Release and lineage dashboard
 
-A read-only web view showing existing artifacts, their provenance, lineage chains, and validation status.
+A read-only web view showing existing releases, their provenance, lineage chains, and validation status.
 
 **Off-the-shelf options to evaluate:**
 
@@ -199,6 +271,6 @@ A read-only web view showing existing artifacts, their provenance, lineage chain
 | **Metabase** | Medium | Strong for tabular views and filters; limited for graph/tree visualisation of lineage |
 | **Grafana** | Medium | Good dashboards for time-series validation metrics; not designed for relational record browsing |
 | **Superset** | Medium | SQL-driven; good for aggregate views, weak on record-level drill-down |
-| **Bespoke (FastAPI + HTMX)** | High control | ~300 lines for a read-only artifact browser; full control over lineage tree rendering; no JS framework needed |
+| **Bespoke (FastAPI + HTMX)** | High control | ~300 lines for a read-only release browser; full control over lineage tree rendering; no JS framework needed |
 
-Minimum viable view: artifact list (filterable by team, release type, status) → artifact detail (provenance, files, tools used, validation results, lineage chain). Retool covers this in a day; a bespoke view takes a sprint but is fully ownable.
+Minimum viable view: release list (filterable by team, release type, status) → release detail (provenance, artifacts, validation results, lineage chain). Retool covers this in a day; a bespoke view takes a sprint but is fully ownable.

@@ -1,5 +1,5 @@
 """
-releasedb_validator.context
+releasedb.validator.context
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Parses the environment variables injected by the ReleaseDB validation runner
 into a clean, typed object. Validation scripts never call os.environ directly.

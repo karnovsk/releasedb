@@ -10,7 +10,7 @@ Run with: pytest tests/test_sync_models.py -v
 import pytest
 from pydantic import ValidationError
 
-from releasedb_validator.sync.models import (
+from releasedb.sync.models import (
     FieldDef,
     ReleaseDBConfig,
     ReleaseTypeConfig,

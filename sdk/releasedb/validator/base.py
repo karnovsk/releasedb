@@ -1,14 +1,14 @@
 """
-releasedb_validator.base
+releasedb.validator.base
 ~~~~~~~~~~~~~~~~~~~~~~~~
 The Validator base class. Teams subclass this, implement validate(),
 and call run() as the script entrypoint.
 
 Usage
 -----
-    from releasedb_validator import Validator
-    from releasedb_validator.checks import file_exists, checksum_matches
-    from releasedb_validator.reporting import ResultStatus
+    from releasedb.validator import Validator
+    from releasedb.validator.checks import file_exists, checksum_matches
+    from releasedb.validator.reporting import ResultStatus
 
     class MyValidator(Validator):
         name = "firmware-integrity-check"
@@ -32,8 +32,8 @@ import traceback
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from releasedb_validator.context import ValidationContext
-from releasedb_validator.reporting import (
+from releasedb.validator.context import ValidationContext
+from releasedb.validator.reporting import (
     CheckResult,
     Reporter,
     ResultStatus,

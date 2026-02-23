@@ -1,6 +1,6 @@
 """
-releasedb_validator.sync.models
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+releasedb.sync.models
+~~~~~~~~~~~~~~~~~~~~~
 Pydantic v2 models for releasedb.yaml config files.
 
 These models represent the user-facing YAML schema — not the API wire format.

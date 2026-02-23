@@ -67,14 +67,14 @@ ReleaseDB Sync — apply — platform-eng
 
 ## Getting the tool
 
-`releasedb-sync` is included in the `releasedb-validator` package.
+`releasedb-sync` is included in the `releasedb` package.
 
 ```bash
 # Install with pip
-pip install releasedb-validator
+pip install releasedb
 
 # Or install the dev extras (includes alembic, psycopg2-binary)
-pip install "releasedb-validator[dev]"
+pip install "releasedb[dev]"
 
 # Verify installation
 releasedb-sync --help
@@ -356,7 +356,7 @@ pipeline {
     stages {
         stage('Validate config') {
             steps {
-                sh 'pip install releasedb-validator --quiet'
+                sh 'pip install releasedb --quiet'
                 sh '''
                     releasedb-sync --dry-run \
                         --api-url $RELEASEDB_API_URL

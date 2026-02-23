@@ -1,5 +1,5 @@
 """
-releasedb_validator.cli
+releasedb.validator.cli
 ~~~~~~~~~~~~~~~~~~~~~~~
 Entry point for the `releasedb-validate` command.
 

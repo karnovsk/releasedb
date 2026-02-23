@@ -1,5 +1,5 @@
 """
-releasedb_validator.reporting
+releasedb.validator.reporting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Result model and the reporter that writes outcomes back to the ReleaseDB API.
 Validation scripts never call the API directly — the base Validator class

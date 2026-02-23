@@ -1,6 +1,6 @@
 """
-releasedb_validator.sync.runner
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+releasedb.sync.runner
+~~~~~~~~~~~~~~~~~~~~~
 Core sync logic: compare desired config against current API state and apply
 the minimum set of creates/updates needed to converge.
 
@@ -21,8 +21,8 @@ import sys
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-from .client import ReleaseDBClient
-from .models import FieldDef, ReleaseDBConfig, ReleaseTypeConfig, ValidationDef
+from releasedb.client import ReleaseDBClient
+from releasedb.sync.models import FieldDef, ReleaseDBConfig, ReleaseTypeConfig, ValidationDef
 
 
 # ---------------------------------------------------------------------------
@@ -100,9 +100,17 @@ def _print_change(action: str, label: str, changed_keys: list[str], dry_run: boo
 # Diff helper
 # ---------------------------------------------------------------------------
 
-def _changed_keys(existing: dict[str, Any], desired: dict[str, Any], keys: list[str]) -> list[str]:
+def _to_dict(obj: Any) -> dict[str, Any]:
+    """Convert a Pydantic model or plain dict to a plain dict for comparison."""
+    if hasattr(obj, "model_dump"):
+        return obj.model_dump()
+    return obj
+
+
+def _changed_keys(existing: Any, desired: dict[str, Any], keys: list[str]) -> list[str]:
     """Return the subset of keys where existing and desired differ."""
-    return [k for k in keys if existing.get(k) != desired.get(k)]
+    existing_dict = _to_dict(existing)
+    return [k for k in keys if existing_dict.get(k) != desired.get(k)]
 
 
 # ---------------------------------------------------------------------------

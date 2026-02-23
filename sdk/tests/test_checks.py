@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from releasedb_validator.checks import (
+from releasedb.validator.checks import (
     checksum_matches,
     extension_allowed,
     file_exists,
@@ -20,7 +20,7 @@ from releasedb_validator.checks import (
     semver_valid,
     version_bumped,
 )
-from releasedb_validator.reporting import ResultStatus
+from releasedb.validator.reporting import ResultStatus
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -186,8 +186,8 @@ def test_http_healthy_wrong_status(responses):
 # ── Validator base class ──────────────────────────────────────────────────────
 
 def test_validator_aggregates_pass(tmp_file, tmp_sha256):
-    from releasedb_validator import Validator
-    from releasedb_validator.context import ValidationContext
+    from releasedb.validator import Validator
+    from releasedb.validator.context import ValidationContext
 
     class SimpleValidator(Validator):
         name = "test"
@@ -208,8 +208,8 @@ def test_validator_aggregates_pass(tmp_file, tmp_sha256):
 
 
 def test_validator_aggregates_fail(tmp_path):
-    from releasedb_validator import Validator
-    from releasedb_validator.context import ValidationContext
+    from releasedb.validator import Validator
+    from releasedb.validator.context import ValidationContext
 
     class FailingValidator(Validator):
         name = "test"
@@ -227,8 +227,8 @@ def test_validator_aggregates_fail(tmp_path):
 
 
 def test_validator_skip():
-    from releasedb_validator import Validator
-    from releasedb_validator.context import ValidationContext
+    from releasedb.validator import Validator
+    from releasedb.validator.context import ValidationContext
 
     class SkippingValidator(Validator):
         name = "test"

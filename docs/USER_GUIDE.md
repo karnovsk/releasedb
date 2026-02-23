@@ -74,9 +74,9 @@ A deployment target (e.g. `dev`, `staging`, `production`) with an optional promo
 - A Jenkins pipeline for your service
 - The `releasedb-shared` Jenkins library loaded in your `Jenkinsfile`
 
-### Install the validator SDK (for writing validation scripts)
+### Install the SDK
 ```bash
-pip install releasedb-validator
+pip install releasedb
 ```
 
 ### Verify API access
@@ -223,6 +223,40 @@ releasedb.registerArtifact(
 4. `artifacts`, `artifact_files`, and `artifact_tools` rows are created
 5. The `artifact_id` UUID is returned for use in release creation
 
+### Submitting via the Python client
+
+```python
+from releasedb import ReleaseDBClient
+
+client = ReleaseDBClient(
+    api_url="https://releasedb.internal",
+    api_token="tok_...",
+)
+
+artifact = client.submit_artifact(
+    release_id="<release-id>",
+    version=os.environ["BUILD_VERSION"],
+    git_commit_sha=os.environ["GIT_COMMIT"],
+    git_branch=os.environ["BRANCH_NAME"],
+    build_id=os.environ["BUILD_NUMBER"],
+    build_url=os.environ["BUILD_URL"],
+    files=[
+        {
+            "filename": "firmware.bin",
+            "digest": "sha256:a3f2b1c0...",
+            "size_bytes": 512000,
+            "file_role": "primary",
+            "storage_uri": "s3://my-bucket/fw/firmware.bin",
+        }
+    ],
+    tools=[
+        {"tool_name": "gcc",   "tool_version": "13.2.0", "git_commit_sha": "abc123"},
+        {"tool_name": "cmake", "tool_version": "3.28.1", "git_commit_sha": "def456"},
+    ],
+)
+print(f"Artifact registered: {artifact.id}")
+```
+
 ---
 
 ## 6. Creating a Release
@@ -269,17 +303,19 @@ draft → validating → approved → deploying → deployed
 
 ## 7. Writing Validation Scripts
 
-Validation scripts use the `releasedb-validator` Python SDK. Install it:
+> **Validation is optional.** If your team validates in its own environment and reports results via the API, or if your release type doesn't require validation, skip this section entirely.
+
+Validation scripts use the `releasedb` Python SDK. Install it:
 
 ```bash
-pip install releasedb-validator
+pip install releasedb
 ```
 
 ### Minimal example
 
 ```python
-from releasedb_validator import Validator
-from releasedb_validator.checks import file_exists, checksum_matches
+from releasedb.validator import Validator
+from releasedb.validator.checks import file_exists, checksum_matches
 
 class IntegrityCheck(Validator):
     name = "integrity-check"
@@ -357,7 +393,7 @@ def validate(self):
 Any function returning a `CheckResult` works:
 
 ```python
-from releasedb_validator.reporting import CheckResult, ResultStatus
+from releasedb.validator.reporting import CheckResult, ResultStatus
 
 def elf_header_valid(path) -> CheckResult:
     magic = open(path, "rb").read(4)
@@ -566,7 +602,7 @@ curl https://releasedb.internal/api/releases/<release-id>/events
 ### Run your validator locally without a ReleaseDB instance
 
 ```python
-from releasedb_validator import ValidationContext
+from releasedb.validator.context import ValidationContext
 
 if __name__ == "__main__":
     ctx = ValidationContext.for_dry_run(
@@ -593,8 +629,8 @@ In dry-run mode, results are printed to stdout but **not** sent to the API.
 
 ```python
 import time
-from releasedb_validator.context import ValidationContext
-from releasedb_validator.reporting import ResultStatus
+from releasedb.validator.context import ValidationContext
+from releasedb.validator.reporting import ResultStatus
 
 def test_passes_with_valid_binary(tmp_path):
     binary = tmp_path / "firmware.bin"

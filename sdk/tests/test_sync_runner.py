@@ -11,9 +11,9 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 
-from releasedb_validator.sync.client import ReleaseDBClient
-from releasedb_validator.sync.models import ReleaseDBConfig
-from releasedb_validator.sync.runner import SyncRunner
+from releasedb.sync.client import ReleaseDBClient
+from releasedb.sync.models import ReleaseDBConfig
+from releasedb.sync.runner import SyncRunner
 
 
 # ---------------------------------------------------------------------------

@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.backends.legacy:build"
 
 [project]
-name = "releasedb-validator"
-version = "1.0.0"
-description = "SDK for writing ReleaseDB validation scripts"
+name = "releasedb"
+version = "2.0.0"
+description = "Python SDK for the ReleaseDB release management system"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
@@ -26,10 +26,10 @@ dev = [
 
 [project.scripts]
 # Run a validator script with dry-run support for local testing
-releasedb-validate = "releasedb_validator.cli:main"
+releasedb-validate = "releasedb.validator.cli:main"
 # Sync a releasedb.yaml config file to the ReleaseDB API
-releasedb-sync     = "releasedb_validator.sync.cli:main"
+releasedb-sync     = "releasedb.sync.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["releasedb_validator*"]
+include = ["releasedb*"]

@@ -14,8 +14,8 @@ Registration in ReleaseDB:
     env_vars: {}
 """
 
-from releasedb_validator import Validator
-from releasedb_validator.checks import (
+from releasedb.validator import Validator
+from releasedb.validator.checks import (
     checksum_matches,
     extension_allowed,
     file_exists,
@@ -61,7 +61,7 @@ class FirmwareIntegrityValidator(Validator):
         # Note: file_exists returns FAIL if missing, but we only want a WARN here.
         # Override the status for non-critical checks:
         if result.failed():
-            from releasedb_validator.reporting import ResultStatus
+            from releasedb.validator.reporting import ResultStatus
             result.status = ResultStatus.WARN  # degrade to warning
 
 

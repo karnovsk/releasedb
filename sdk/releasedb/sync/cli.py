@@ -1,6 +1,6 @@
 """
-releasedb_validator.sync.cli
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+releasedb.sync.cli
+~~~~~~~~~~~~~~~~~~
 Entry point for the `releasedb-sync` command.
 
 Usage
@@ -31,9 +31,10 @@ from pathlib import Path
 import yaml
 from pydantic import ValidationError
 
-from .client import APIError, ReleaseDBClient
-from .models import ReleaseDBConfig
-from .runner import SyncRunner
+from releasedb.client import ReleaseDBClient
+from releasedb.exceptions import APIError
+from releasedb.sync.models import ReleaseDBConfig
+from releasedb.sync.runner import SyncRunner
 
 
 def _build_parser() -> argparse.ArgumentParser:

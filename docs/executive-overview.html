@@ -516,8 +516,8 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
     <div class="not-item">
       <div class="not-x">↗</div>
       <div class="not-text">
-        <strong>Jenkins / CI pipelines</strong>
-        Builds still run in Jenkins. ReleaseDB receives the results and records them.
+        <strong>CI/CD pipelines — or none at all</strong>
+        Builds happen wherever they happen. ReleaseDB accepts registrations from any script, pipeline, or tool via REST API or Python client. No specific CI system is required.
       </div>
     </div>
     <div class="not-item">
@@ -560,7 +560,7 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
     <div class="lc-step">
       <div class="lc-num">01</div>
       <div class="lc-label">Build</div>
-      <div class="lc-sub">CI pipeline produces artifact</div>
+      <div class="lc-sub">Any build process produces artifact</div>
     </div>
     <div class="lc-arrow">›</div>
     <div class="lc-step">
@@ -718,11 +718,11 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
     <div class="stake-card" style="background:var(--faint);border:1px solid var(--border)">
       <div class="stake-role" style="color:var(--violet)">Engineers</div>
       <ul class="stake-list">
-        <li>Release pipeline integrates with existing Jenkins jobs</li>
-        <li>Write validation scripts using a simple Python SDK</li>
+        <li>Register artifacts via REST API, Python client, or plain <code style="font-size:10.5px;background:var(--border);padding:1px 3px;border-radius:2px">curl</code> — no CI system required</li>
+        <li>Write validation scripts using the optional Python SDK</li>
         <li>Test validators locally with one command, no live API needed</li>
         <li>See exactly which checks passed or failed and why</li>
-        <li>No new tools to learn beyond a YAML config file</li>
+        <li>No new tools to learn beyond a YAML config and an HTTP call</li>
       </ul>
     </div>
 
@@ -767,7 +767,7 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
       <div class="tl-body">
         <div class="tl-title">Sync configuration to the platform</div>
         <div class="tl-desc">
-          One command — <code style="font-size:11px;background:var(--faint);padding:1px 4px;border-radius:3px">releasedb-sync --dry-run</code> — previews every change before applying. The team runs <code style="font-size:11px;background:var(--faint);padding:1px 4px;border-radius:3px">releasedb-sync</code> to register their team, release types, and field definitions. A Jenkins "setup" pipeline automates this on every merge to main.
+          One command — <code style="font-size:11px;background:var(--faint);padding:1px 4px;border-radius:3px">releasedb-sync --dry-run</code> — previews every change before applying. The team runs <code style="font-size:11px;background:var(--faint);padding:1px 4px;border-radius:3px">releasedb-sync</code> to register their team, release types, and field definitions. This can be run manually, from a CI step, or from any script — wherever is convenient.
         </div>
       </div>
     </div>
@@ -785,9 +785,9 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
     <div class="tl-item">
       <div class="tl-dot" style="background:var(--green-lt);color:var(--green)">Week 2</div>
       <div class="tl-body">
-        <div class="tl-title">Add ReleaseDB steps to the Jenkins pipeline</div>
+        <div class="tl-title">Register artifacts and trigger validation</div>
         <div class="tl-desc">
-          Two API calls are added to the existing Jenkinsfile: one to register the artifact after build, one to trigger and gate on validation before promotion. The team's first end-to-end release flows through the system.
+          Two API calls complete the integration: one to register the artifact after build, one to trigger and gate on validation before promotion. These can come from a CI pipeline step, a post-build script, or any tool that can make an HTTP request — <code style="font-size:11px;background:var(--faint);padding:1px 4px;border-radius:3px">curl</code>, the Python client, or any HTTP library.
         </div>
       </div>
     </div>
@@ -832,8 +832,8 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
         <div class="status-item">
           <div class="status-pip" style="background:var(--green)"></div>
           <div class="status-text">
-            Python SDK — validator framework
-            <span>Base class, built-in checks, context objects, result reporting</span>
+            Python SDK — full client + validator framework
+            <span>ReleaseDBClient (all CRUD), built-in checks, context, result reporting</span>
           </div>
         </div>
 
@@ -842,6 +842,14 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
           <div class="status-text">
             Config-as-code sync tool (<code style="font-size:11px">releasedb-sync</code>)
             <span>YAML config, Pydantic validation, dry-run mode, 50 tests</span>
+          </div>
+        </div>
+
+        <div class="status-item">
+          <div class="status-pip" style="background:var(--green)"></div>
+          <div class="status-text">
+            REST API server — FastAPI + asyncpg
+            <span>All CRUD endpoints, bearer auth, 8 routers, asyncpg connection pool</span>
           </div>
         </div>
 
@@ -863,14 +871,6 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
         <div class="status-item">
           <div class="status-pip" style="background:var(--border)"></div>
           <div class="status-text">
-            REST API server
-            <span>All CRUD endpoints, auth, validation runner integration</span>
-          </div>
-        </div>
-
-        <div class="status-item">
-          <div class="status-pip" style="background:var(--border)"></div>
-          <div class="status-text">
             Validation runner
             <span>Docker-based script execution engine, result reporting</span>
           </div>
@@ -887,8 +887,8 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
         <div class="status-item">
           <div class="status-pip" style="background:var(--border)"></div>
           <div class="status-text">
-            Artifact lineage tracking
-            <span>Parent → child artifact chain, recursive lineage queries</span>
+            Release lineage
+            <span>Supersedes / depends-on relationships between releases; patch chains; cross-team ordering</span>
           </div>
         </div>
 
@@ -921,12 +921,12 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
 
     <div style="background:white;border:1px solid var(--border);border-radius:6px;padding:20px 18px">
-      <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--rust);font-weight:600;margin-bottom:10px">Artifact lineage</div>
+      <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--rust);font-weight:600;margin-bottom:10px">Release lineage</div>
       <div style="font-size:12.5px;color:var(--ink);line-height:1.6;margin-bottom:12px">
-        Should we track which artifact was derived from a previous artifact? Required for: container image chains, firmware layering, security impact tracing.
+        Should releases carry explicit parent-child relationships? Required for: hotfix releases that supersede a base release, patch chains (v1.2.3 supersedes v1.2.2), cross-team dependencies where release B cannot deploy before release A, and security impact tracing ("which subsequent releases are affected?").
       </div>
       <div style="font-size:11.5px;color:var(--muted);line-height:1.55">
-        <strong>Options:</strong> single parent FK on <code style="font-size:10.5px;background:var(--faint);padding:1px 3px;border-radius:2px">artifacts</code> (simple), or a join table for multi-parent merge builds (flexible).
+        <strong>Options:</strong> single parent FK on <code style="font-size:10.5px;background:var(--faint);padding:1px 3px;border-radius:2px">releases</code> (simple, covers patch chains), or a dependency graph table for multi-parent and cross-team ordering (flexible, more complex).
       </div>
     </div>
 
@@ -1000,7 +1000,7 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
     </div>
     <div class="ask-chip">
       <strong>Next milestone</strong>
-      API server + runner. Enables first end-to-end release through the system.
+      Validation runner — Docker-based script execution with result reporting. Enables first end-to-end automated validation.
     </div>
   </div>
 
