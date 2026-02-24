@@ -208,6 +208,21 @@ CREATE TRIGGER trg_releases_updated_at
 
 
 -- ---------------------------------------------------------------------------
+-- release_dependencies
+-- Join table representing the DAG of release lineage.
+-- A release can depend on multiple upstream releases (many-to-many).
+-- ---------------------------------------------------------------------------
+CREATE TABLE release_dependencies (
+    release_id    uuid NOT NULL REFERENCES releases(id) ON DELETE CASCADE,
+    depends_on_id uuid NOT NULL REFERENCES releases(id) ON DELETE RESTRICT,
+    PRIMARY KEY (release_id, depends_on_id),
+    CHECK (release_id <> depends_on_id)
+);
+
+CREATE INDEX ON release_dependencies (depends_on_id);
+
+
+-- ---------------------------------------------------------------------------
 -- release_field_values
 -- EAV store for custom per-release metadata.
 -- One row per (release × field_def). Type-split columns avoid untyped text blobs.

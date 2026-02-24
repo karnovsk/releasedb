@@ -228,34 +228,38 @@ pytest tests/ -v
 
 ### 1. Release lineage
 
-Track which release was derived from or supersedes a previous release (parent → child).
+Track how releases relate across pipeline stages. Work proceeds through a series of stages, each producing a release on completion. Because pipelines are not strictly linear — a single upstream release can feed multiple downstream iterations, and a downstream stage can depend on releases from multiple upstream stages — lineage forms a **directed acyclic graph (DAG)**, not a simple parent chain.
 
-Covers hotfix releases that supersede a base release, patch chains (v1.2.3 supersedes v1.2.2), cross-team deployment ordering (release B cannot deploy before release A), and security response ("which subsequent releases are affected by this vulnerability?"). A single nullable self-referencing FK on `releases`:
+Implemented as a join table:
 
 ```sql
--- Migration needed
-ALTER TABLE releases
-    ADD COLUMN derived_from_release_id uuid REFERENCES releases(id) ON DELETE SET NULL;
-CREATE INDEX ON releases (derived_from_release_id);
+CREATE TABLE release_dependencies (
+    release_id    uuid NOT NULL REFERENCES releases(id) ON DELETE CASCADE,
+    depends_on_id uuid NOT NULL REFERENCES releases(id) ON DELETE RESTRICT,
+    PRIMARY KEY (release_id, depends_on_id),
+    CHECK (release_id <> depends_on_id)
+);
 ```
 
-Recursive lineage queries can walk the chain with a CTE. Open questions: do we need multiple parents (merge scenarios, cross-team dependencies)? Should circularity be prevented at DB or application level? Should `derived_from` be settable at release creation time or patchable afterwards?
+The full ancestor graph for any release is traversable via a PostgreSQL recursive CTE. `UNION` (not `UNION ALL`) deduplicates edges at each step, which terminates traversal safely even if cycles exist in data.
 
-API impact: `POST /api/releases` accepts `derived_from_release_id`; `GET /api/releases/:id/lineage` returns ancestor chain.
+API: `POST /api/releases` accepts `depends_on: [uuid, ...]`; `GET /api/releases/:id/lineage` returns `{"nodes": [...], "edges": [...]}` for the complete ancestor graph.
+
+SDK: `client.create_release(..., depends_on=[...])` and `client.get_release_lineage(release_id)`.
 
 ---
 
-### 2. Marking artifacts as canonical releases
+### 2. Marking releases as canonical
 
-Artifacts are currently build outputs that belong to a release, but there is no way to promote a specific artifact to "this is the blessed release artifact" independently of the release lifecycle status.
+Releases move through a lifecycle (`draft → validating → approved → deploying → deployed`), but there is no way to mark a specific release as "the blessed version for this product" independently of its lifecycle status — for example, to designate `v2.4.1` as the current stable release while `v2.5.0-rc1` is still in validation.
 
 Potential approaches:
 
-- **Flag on `artifacts`** — add `is_release_artifact boolean DEFAULT false`. Simple; queryable. Requires a convention for when to set it.
-- **Separate `release_tags` table** — a named tag (e.g. `v2.4.1-production`) pointing to an artifact. More flexible; supports multiple named pointers to the same artifact (GA, LTS, latest).
-- **Rely on `releases.status = 'deployed'`** — treat the artifact linked to a `deployed` release as implicitly canonical. No schema change; may be sufficient.
+- **Flag on `releases`** — add `is_canonical boolean DEFAULT false`. Simple; queryable. Requires a convention for when to set it and whether only one release per team/type can be canonical at a time.
+- **Separate `release_tags` table** — a named tag (e.g. `stable`, `lts`, `latest`) pointing to a release. More flexible; supports multiple named pointers (GA, LTS, latest) and allows external systems to pull by stable name.
+- **Rely on `releases.status = 'deployed'`** — treat the most recently deployed release as implicitly canonical. No schema change; may be sufficient for simple cases.
 
-Decision needed: is this a display/query concern (filter by deployed releases) or does it need a first-class schema concept? The answer likely depends on whether external systems (registries, deployment tools) need to pull "the release artifact" by a stable name.
+Decision needed: is this a display/query concern (filter by deployed releases) or does it need a first-class schema concept? The answer depends on whether external systems (registries, deployment tools, release notes pages) need to resolve "the current release" by a stable name independently of deployment status.
 
 ---
 

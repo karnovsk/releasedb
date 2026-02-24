@@ -1,4 +1,4 @@
-"""Initial schema — all 15 tables across 5 layers.
+"""Initial schema — all 16 tables across 5 layers.
 
 Revision ID: 0001
 Revises:
@@ -7,7 +7,7 @@ Create Date: 2026-02-17
 Layers created (in FK-dependency order):
   Config Layer    : teams, environments, tools, release_type_configs,
                     release_type_field_defs, validation_definitions
-  Release Layer   : releases, release_field_values
+  Release Layer   : releases, release_field_values, release_dependencies
   Artifact Layer  : artifacts, artifact_files, artifact_tools
   Validation Layer: validation_runs, validation_results
   Workflow Layer  : approvals, deployments, release_events
@@ -205,6 +205,16 @@ def upgrade() -> None:
     op.execute("CREATE INDEX ON release_field_values (release_id)")
     op.execute("CREATE INDEX ON release_field_values (field_def_id)")
 
+    op.execute("""
+        CREATE TABLE release_dependencies (
+            release_id    uuid NOT NULL REFERENCES releases(id) ON DELETE CASCADE,
+            depends_on_id uuid NOT NULL REFERENCES releases(id) ON DELETE RESTRICT,
+            PRIMARY KEY (release_id, depends_on_id),
+            CHECK (release_id <> depends_on_id)
+        )
+    """)
+    op.execute("CREATE INDEX ON release_dependencies (depends_on_id)")
+
     # ==================================================================
     # ARTIFACT LAYER
     # ==================================================================
@@ -395,6 +405,7 @@ def downgrade() -> None:
     op.execute("DROP TABLE IF EXISTS artifacts CASCADE")
 
     # Release layer
+    op.execute("DROP TABLE IF EXISTS release_dependencies CASCADE")
     op.execute("DROP TABLE IF EXISTS release_field_values CASCADE")
     op.execute("DROP TABLE IF EXISTS releases CASCADE")
 

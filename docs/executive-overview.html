@@ -888,7 +888,7 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
           <div class="status-pip" style="background:var(--border)"></div>
           <div class="status-text">
             Release lineage
-            <span>Supersedes / depends-on relationships between releases; patch chains; cross-team ordering</span>
+            <span>DAG of depends-on relationships between releases; multi-parent and cross-team ordering; ancestor graph API</span>
           </div>
         </div>
 
@@ -923,20 +923,20 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
     <div style="background:white;border:1px solid var(--border);border-radius:6px;padding:20px 18px">
       <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--rust);font-weight:600;margin-bottom:10px">Release lineage</div>
       <div style="font-size:12.5px;color:var(--ink);line-height:1.6;margin-bottom:12px">
-        Should releases carry explicit parent-child relationships? Required for: hotfix releases that supersede a base release, patch chains (v1.2.3 supersedes v1.2.2), cross-team dependencies where release B cannot deploy before release A, and security impact tracing ("which subsequent releases are affected?").
+        Releases track upstream dependencies as a directed acyclic graph (DAG). A pipeline stage produces a release; downstream stages declare which upstream releases they depend on. Both one-to-many and many-to-many relationships are supported.
       </div>
       <div style="font-size:11.5px;color:var(--muted);line-height:1.55">
-        <strong>Options:</strong> single parent FK on <code style="font-size:10.5px;background:var(--faint);padding:1px 3px;border-radius:2px">releases</code> (simple, covers patch chains), or a dependency graph table for multi-parent and cross-team ordering (flexible, more complex).
+        <strong>Approach:</strong> <code style="font-size:10.5px;background:var(--faint);padding:1px 3px;border-radius:2px">release_dependencies</code> join table. Full ancestor graph retrieved via recursive CTE. API: <code style="font-size:10.5px;background:var(--faint);padding:1px 3px;border-radius:2px">POST /releases</code> accepts <code style="font-size:10.5px;background:var(--faint);padding:1px 3px;border-radius:2px">depends_on</code>; <code style="font-size:10.5px;background:var(--faint);padding:1px 3px;border-radius:2px">GET /releases/:id/lineage</code> returns nodes + edges.
       </div>
     </div>
 
     <div style="background:white;border:1px solid var(--border);border-radius:6px;padding:20px 18px">
       <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:10px">Canonical release marking</div>
       <div style="font-size:12.5px;color:var(--ink);line-height:1.6;margin-bottom:12px">
-        Do external systems (registries, deployment tools) need to pull "the release artifact" by a stable name independent of the release lifecycle status?
+        Should a release be explicitly marked as "the current stable version" independently of its lifecycle status? Required when external systems (registries, deployment tools, release notes pages) need to resolve "the release" by a stable name.
       </div>
       <div style="font-size:11.5px;color:var(--muted);line-height:1.55">
-        <strong>Options:</strong> rely on <code style="font-size:10.5px;background:var(--faint);padding:1px 3px;border-radius:2px">status = deployed</code> (no schema change), add a boolean flag, or a separate named-tag table.
+        <strong>Options:</strong> rely on <code style="font-size:10.5px;background:var(--faint);padding:1px 3px;border-radius:2px">status = deployed</code> (no schema change), add <code style="font-size:10.5px;background:var(--faint);padding:1px 3px;border-radius:2px">is_canonical</code> flag on <code style="font-size:10.5px;background:var(--faint);padding:1px 3px;border-radius:2px">releases</code>, or a <code style="font-size:10.5px;background:var(--faint);padding:1px 3px;border-radius:2px">release_tags</code> table (stable, lts, latest).
       </div>
     </div>
 

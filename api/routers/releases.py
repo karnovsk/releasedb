@@ -13,9 +13,12 @@ from api.models.releases import (
     ApprovalResponse,
     DeploymentResponse,
     DeploymentTrigger,
+    LineageEdge,
+    LineageResponse,
     ReleaseCreate,
     ReleaseEventResponse,
     ReleaseResponse,
+    ReleaseSummary,
     ReleaseUpdate,
     ValidationRunResponse,
     ValidationTrigger,
@@ -46,6 +49,11 @@ async def _row_to_release(
 ) -> dict[str, Any]:
     d = dict(row)
     d["field_values"] = await _fetch_field_values(conn, row["id"])
+    dep_rows = await conn.fetch(
+        "SELECT depends_on_id FROM release_dependencies WHERE release_id=$1",
+        row["id"],
+    )
+    d["depends_on"] = [r["depends_on_id"] for r in dep_rows]
     return d
 
 
@@ -166,6 +174,19 @@ async def create_release(body: ReleaseCreate, conn: asyncpg.Connection = Depends
                 value if fd_type in ("string", "enum", "bool", "file") else None,
                 float(value) if fd_type == "number" else None,
                 value if fd_type == "date" else None,
+            )
+
+        # Insert dependency edges
+        for parent_id in body.depends_on:
+            parent = await conn.fetchrow(
+                "SELECT id FROM releases WHERE id=$1", parent_id
+            )
+            if not parent:
+                raise HTTPException(404, f"Dependency release not found: {parent_id}")
+            await conn.execute(
+                "INSERT INTO release_dependencies (release_id, depends_on_id) VALUES ($1, $2)",
+                row["id"],
+                parent_id,
             )
 
         # Append release_created event
@@ -393,3 +414,55 @@ async def list_release_events(
         release_id,
     )
     return [dict(r) for r in events]
+
+
+# ── Lineage ───────────────────────────────────────────────────────────────────
+
+@router.get("/releases/{release_id}/lineage", response_model=LineageResponse)
+async def get_release_lineage(
+    release_id: UUID, conn: asyncpg.Connection = Depends(db)
+):
+    row = await conn.fetchrow("SELECT id FROM releases WHERE id=$1", release_id)
+    if not row:
+        raise HTTPException(404, "Release not found")
+
+    # Traverse all ancestors via recursive CTE.
+    # UNION (not UNION ALL) deduplicates edges at each step, which naturally
+    # terminates traversal even if data contains cycles.
+    edge_rows = await conn.fetch(
+        """
+        WITH RECURSIVE ancestors AS (
+            SELECT release_id, depends_on_id
+            FROM release_dependencies
+            WHERE release_id = $1
+          UNION
+            SELECT rd.release_id, rd.depends_on_id
+            FROM release_dependencies rd
+            JOIN ancestors a ON rd.release_id = a.depends_on_id
+        )
+        SELECT release_id, depends_on_id FROM ancestors
+        """,
+        release_id,
+    )
+
+    # Collect all unique node IDs, including the starting release itself.
+    node_ids = {release_id}
+    for r in edge_rows:
+        node_ids.add(r["release_id"])
+        node_ids.add(r["depends_on_id"])
+
+    node_rows = await conn.fetch(
+        "SELECT id, release_name, version, status FROM releases WHERE id = ANY($1)",
+        list(node_ids),
+    )
+
+    return LineageResponse(
+        nodes=[ReleaseSummary(**dict(r)) for r in node_rows],
+        edges=[
+            LineageEdge(
+                from_release_id=r["release_id"],
+                to_release_id=r["depends_on_id"],
+            )
+            for r in edge_rows
+        ],
+    )

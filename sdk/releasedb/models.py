@@ -61,6 +61,7 @@ class ReleaseResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     field_values: dict[str, str] = {}
+    depends_on: list[UUID] = []
 
 
 class ArtifactFileResponse(BaseModel):

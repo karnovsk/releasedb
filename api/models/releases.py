@@ -144,6 +144,7 @@ class ReleaseCreate(BaseModel):
     notes: Optional[str] = None
     created_by: Optional[str] = None
     field_values: dict[str, str] = {}
+    depends_on: list[UUID] = []
 
 
 class ReleaseUpdate(BaseModel):
@@ -165,6 +166,7 @@ class ReleaseResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     field_values: dict[str, str] = {}
+    depends_on: list[UUID] = []
 
 
 class ValidationTrigger(BaseModel):
@@ -232,3 +234,20 @@ class ReleaseEventResponse(BaseModel):
     actor_team_id: Optional[UUID] = None
     payload: Optional[dict[str, Any]] = None
     occurred_at: datetime
+
+
+class ReleaseSummary(BaseModel):
+    id: UUID
+    release_name: str
+    version: str
+    status: str
+
+
+class LineageEdge(BaseModel):
+    from_release_id: UUID
+    to_release_id: UUID
+
+
+class LineageResponse(BaseModel):
+    nodes: list[ReleaseSummary]
+    edges: list[LineageEdge]

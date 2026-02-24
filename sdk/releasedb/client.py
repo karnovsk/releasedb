@@ -254,6 +254,7 @@ class ReleaseDBClient:
         notes: Optional[str] = None,
         created_by: Optional[str] = None,
         field_values: Optional[dict[str, str]] = None,
+        depends_on: Optional[list[str | UUID]] = None,
     ) -> ReleaseResponse:
         """
         Create a new release (status: draft).
@@ -266,6 +267,7 @@ class ReleaseDBClient:
             notes: Release notes (Markdown supported).
             created_by: SSO identity / email of the person creating the release.
             field_values: Custom field values keyed by field_key.
+            depends_on: List of upstream release UUIDs this release depends on.
         """
         payload = {
             "release_type_config_id": str(release_type_config_id),
@@ -275,6 +277,7 @@ class ReleaseDBClient:
             "notes": notes,
             "created_by": created_by,
             "field_values": field_values or {},
+            "depends_on": [str(x) for x in (depends_on or [])],
         }
         data = self._request("POST", "/api/releases", json=payload)
         return ReleaseResponse(**data)
@@ -300,6 +303,15 @@ class ReleaseDBClient:
     ) -> list[ReleaseEventResponse]:
         data = self._request("GET", f"/api/releases/{release_id}/events")
         return [ReleaseEventResponse(**row) for row in data]
+
+    def get_release_lineage(self, release_id: str | UUID) -> dict:
+        """
+        Return the full ancestor graph for a release.
+
+        Response shape: {"nodes": [ReleaseSummary, ...], "edges": [{"from_release_id": ..., "to_release_id": ...}]}
+        Each edge represents a direct dependency: from_release_id depends on to_release_id.
+        """
+        return self._request("GET", f"/api/releases/{release_id}/lineage")
 
     # ── Artifacts ─────────────────────────────────────────────────────────────
 
