@@ -413,7 +413,13 @@ async def list_release_events(
         """,
         release_id,
     )
-    return [dict(r) for r in events]
+    result = []
+    for r in events:
+        d = dict(r)
+        if isinstance(d.get("payload"), str):
+            d["payload"] = json.loads(d["payload"])
+        result.append(d)
+    return result
 
 
 # ── Lineage ───────────────────────────────────────────────────────────────────

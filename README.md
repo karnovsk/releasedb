@@ -35,9 +35,14 @@ releasedb/
 │   │   └── versions/
 │   │       └── 0001_initial_schema.py
 │   ├── examples/              ← Example validation scripts
-│   ├── tests/                 ← Unit tests
+│   ├── tests/                 ← SDK unit tests (no live DB required)
 │   ├── pyproject.toml
 │   └── README.md              ← SDK quickstart and API reference
+├── tests/                     ← API integration tests (requires Postgres)
+├── docker/
+│   └── init-test-db.sql       ← Creates releasedb_test on first container start
+├── docker-compose.yml         ← Local Postgres (dev + test databases)
+├── pytest.ini                 ← pytest configuration
 └── releasedb.template.yaml    ← Team config template (copy and edit)
 ```
 
@@ -174,43 +179,72 @@ releasedb-validate my_validator.py --dry-run \
 
 ---
 
-## API Server
+## Local Development
+
+### 1. Start Postgres
+
+A single Docker container serves both the dev database (`releasedb`) and the
+integration test database (`releasedb_test`). Both are created automatically on
+first start.
 
 ```bash
-cd api/
-pip install -r requirements.txt
-export DATABASE_URL=postgresql://user:pass@localhost/releasedb
-export RELEASEDB_API_TOKEN=tok_...
-uvicorn api.main:app --reload
+docker compose up -d
 ```
 
-Interactive API docs at `http://localhost:8000/docs`.
-
----
-
-## Database Setup
-
-The schema targets PostgreSQL 13+.
+### 2. Create a virtual environment and install dependencies
 
 ```bash
-# Apply via Alembic
-cd sdk/
-pip install -e ".[dev]"
-export DATABASE_URL=postgresql+psycopg2://user:pass@localhost/releasedb
-alembic -c migrations/alembic.ini upgrade head
+python -m venv .venv
+source .venv/Scripts/activate   # Windows (Git Bash)
+# source .venv/bin/activate     # macOS / Linux
 
-# Or apply the DDL directly
-psql releasedb < schema/schema.sql
+pip install --upgrade pip setuptools
+pip install -r api/requirements.txt
+pip install -e "sdk/.[dev]"
+pip install -r tests/requirements.txt
 ```
+
+### 3. Apply migrations to the dev database
+
+```bash
+DATABASE_URL=postgresql+psycopg2://releasedb:releasedb@localhost/releasedb \
+  alembic -c sdk/migrations/alembic.ini upgrade head
+```
+
+### 4. Start the API server
+
+```bash
+DATABASE_URL=postgresql://releasedb:releasedb@localhost/releasedb \
+  RELEASEDB_API_TOKEN=devtoken \
+  uvicorn api.main:app --reload
+```
+
+Interactive API docs available at `http://localhost:8000/docs`.
 
 ---
 
 ## Running Tests
 
+### Unit tests (no database required)
+
 ```bash
-cd sdk/
-pip install -e ".[dev]"
+pytest sdk/tests/ -v
+```
+
+### Integration tests (requires Postgres via `docker compose up -d`)
+
+```bash
 pytest tests/ -v
+```
+
+The integration test suite automatically runs Alembic migrations against
+`releasedb_test` before the first test, and truncates all tables between tests
+so each test starts with a clean database. The dev database is not affected.
+
+To use a different test database:
+
+```bash
+TEST_DATABASE_URL=postgresql://user:pass@host/mydb pytest tests/ -v
 ```
 
 ---

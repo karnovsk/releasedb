@@ -1,0 +1,5 @@
+# Additional dependencies for integration tests.
+# Also install: api/requirements.txt and sdk/.[dev]
+httpx>=0.27
+psycopg2-binary>=2.9
+pytest>=7.0
