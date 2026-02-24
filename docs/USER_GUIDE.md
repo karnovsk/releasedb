@@ -504,6 +504,8 @@ curl https://releasedb.internal/api/releases/<release-id>/validation-runs \
 
 ## 10. Approvals
 
+Approval workflows are optional — they apply only when `requires_approval: true` is set on the release type config (the default) or the target environment. Teams that don't need formal sign-off can set this to `false` and skip this section entirely.
+
 Environments with `requires_approval: true` need explicit sign-off before deployment.
 
 ### Submitting an approval

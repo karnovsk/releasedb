@@ -151,7 +151,7 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
 
 .problem-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
 }
 
@@ -461,22 +461,6 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
     </div>
 
     <div class="problem-card">
-      <div class="problem-icon">🛡️</div>
-      <div class="problem-title">Security response is slow</div>
-      <div class="problem-body">
-        When a vulnerability is found in a build tool or a dependency, there is no fast way to find every artifact that was built with it. Blast radius assessment takes days of manual archaeology.
-      </div>
-    </div>
-
-    <div class="problem-card">
-      <div class="problem-icon">📋</div>
-      <div class="problem-title">Compliance gaps</div>
-      <div class="problem-body">
-        Auditors need evidence that changes were reviewed, validated, and approved before deployment. Assembling this evidence from Jenkins logs, git history, and Slack exports is painful and error-prone.
-      </div>
-    </div>
-
-    <div class="problem-card">
       <div class="problem-icon">⏱️</div>
       <div class="problem-title">Releases block on humans</div>
       <div class="problem-body">
@@ -648,7 +632,7 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
       <div class="cap-icon">🖊️</div>
       <div class="cap-title">Structured approval workflows</div>
       <div class="cap-body">
-        Approvals are captured per-release, per-environment, per-team. Each approval records the approver's identity, decision, comment, and timestamp. Approvals are required before deployment can proceed.
+        Approvals are captured per-release, per-environment, per-team. Each approval records the approver's identity, decision, comment, and timestamp. Approval workflows are optional — enabled per release type and environment via the <code style="font-size:10.5px;background:var(--faint);padding:1px 3px;border-radius:2px">requires_approval</code> flag.
       </div>
     </div>
 
@@ -698,8 +682,6 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
       <ul class="stake-list">
         <li>See what is running in every environment at any time</li>
         <li>Know that every production release was approved by an authorised person</li>
-        <li>Respond to security incidents with exact toolchain impact data</li>
-        <li>Produce compliance evidence without manual assembly</li>
         <li>Track release velocity and validation pass rates across teams</li>
       </ul>
     </div>
@@ -816,7 +798,7 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
         <div class="status-item">
           <div class="status-pip" style="background:var(--green)"></div>
           <div class="status-text">
-            PostgreSQL schema — 15 tables across 5 layers
+            PostgreSQL schema — 16 tables across 5 layers
             <span>Full DDL with constraints, indexes, and triggers</span>
           </div>
         </div>
@@ -861,6 +843,14 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
           </div>
         </div>
 
+        <div class="status-item">
+          <div class="status-pip" style="background:var(--green)"></div>
+          <div class="status-text">
+            Release lineage — DAG model
+            <span>release_dependencies join table; POST /releases accepts depends_on; GET /lineage returns ancestor graph</span>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -881,14 +871,6 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
           <div class="status-text">
             Release operations web UI
             <span>Release detail, approval workflow, validation result viewer</span>
-          </div>
-        </div>
-
-        <div class="status-item">
-          <div class="status-pip" style="background:var(--border)"></div>
-          <div class="status-text">
-            Release lineage
-            <span>DAG of depends-on relationships between releases; multi-parent and cross-team ordering; ancestor graph API</span>
           </div>
         </div>
 
@@ -918,17 +900,7 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
     <h2 class="sh-title f-serif">Open design decisions</h2>
   </div>
 
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
-
-    <div style="background:white;border:1px solid var(--border);border-radius:6px;padding:20px 18px">
-      <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--rust);font-weight:600;margin-bottom:10px">Release lineage</div>
-      <div style="font-size:12.5px;color:var(--ink);line-height:1.6;margin-bottom:12px">
-        Releases track upstream dependencies as a directed acyclic graph (DAG). A pipeline stage produces a release; downstream stages declare which upstream releases they depend on. Both one-to-many and many-to-many relationships are supported.
-      </div>
-      <div style="font-size:11.5px;color:var(--muted);line-height:1.55">
-        <strong>Approach:</strong> <code style="font-size:10.5px;background:var(--faint);padding:1px 3px;border-radius:2px">release_dependencies</code> join table. Full ancestor graph retrieved via recursive CTE. API: <code style="font-size:10.5px;background:var(--faint);padding:1px 3px;border-radius:2px">POST /releases</code> accepts <code style="font-size:10.5px;background:var(--faint);padding:1px 3px;border-radius:2px">depends_on</code>; <code style="font-size:10.5px;background:var(--faint);padding:1px 3px;border-radius:2px">GET /releases/:id/lineage</code> returns nodes + edges.
-      </div>
-    </div>
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
 
     <div style="background:white;border:1px solid var(--border);border-radius:6px;padding:20px 18px">
       <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:10px">Canonical release marking</div>
@@ -964,7 +936,7 @@ h1, h2, h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 900; line-hei
     <div style="background:var(--faint);border:1px solid var(--border);border-radius:6px;padding:16px 18px">
       <div style="font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:8px">Authentication model</div>
       <div style="font-size:12px;color:var(--muted);line-height:1.6">
-        The API currently uses bearer tokens. Production will require SSO integration (Okta / Azure AD) so that <code style="font-size:10.5px;background:var(--border);padding:1px 3px;border-radius:2px">approver_identity</code> is a verified user identity, not a self-reported string. This gates the compliance story.
+        The API currently uses bearer tokens. Production will require SSO integration (Okta / Azure AD) so that <code style="font-size:10.5px;background:var(--border);padding:1px 3px;border-radius:2px">approver_identity</code> is a verified user identity, not a self-reported string.
       </div>
     </div>
 

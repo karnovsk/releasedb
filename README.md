@@ -226,30 +226,7 @@ pytest tests/ -v
 
 ## Open Items
 
-### 1. Release lineage
-
-Track how releases relate across pipeline stages. Work proceeds through a series of stages, each producing a release on completion. Because pipelines are not strictly linear — a single upstream release can feed multiple downstream iterations, and a downstream stage can depend on releases from multiple upstream stages — lineage forms a **directed acyclic graph (DAG)**, not a simple parent chain.
-
-Implemented as a join table:
-
-```sql
-CREATE TABLE release_dependencies (
-    release_id    uuid NOT NULL REFERENCES releases(id) ON DELETE CASCADE,
-    depends_on_id uuid NOT NULL REFERENCES releases(id) ON DELETE RESTRICT,
-    PRIMARY KEY (release_id, depends_on_id),
-    CHECK (release_id <> depends_on_id)
-);
-```
-
-The full ancestor graph for any release is traversable via a PostgreSQL recursive CTE. `UNION` (not `UNION ALL`) deduplicates edges at each step, which terminates traversal safely even if cycles exist in data.
-
-API: `POST /api/releases` accepts `depends_on: [uuid, ...]`; `GET /api/releases/:id/lineage` returns `{"nodes": [...], "edges": [...]}` for the complete ancestor graph.
-
-SDK: `client.create_release(..., depends_on=[...])` and `client.get_release_lineage(release_id)`.
-
----
-
-### 2. Marking releases as canonical
+### 1. Marking releases as canonical
 
 Releases move through a lifecycle (`draft → validating → approved → deploying → deployed`), but there is no way to mark a specific release as "the blessed version for this product" independently of its lifecycle status — for example, to designate `v2.4.1` as the current stable release while `v2.5.0-rc1` is still in validation.
 
@@ -263,7 +240,7 @@ Decision needed: is this a display/query concern (filter by deployed releases) o
 
 ---
 
-### 3. Release and lineage dashboard
+### 2. Release and lineage dashboard
 
 A read-only web view showing existing releases, their provenance, lineage chains, and validation status.
 
