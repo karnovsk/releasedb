@@ -53,6 +53,7 @@ from releasedb.models import (
     ArtifactResponse,
     DeploymentResponse,
     EnvironmentResponse,
+    ProjectResponse,
     ReleaseEventResponse,
     ReleaseResponse,
     ReleaseTypeResponse,
@@ -219,6 +220,25 @@ class ReleaseDBClient:
             json=payload,
         )
 
+    # ── Projects ──────────────────────────────────────────────────────────────
+
+    def list_projects(self) -> list[ProjectResponse]:
+        data = self._request("GET", "/api/projects")
+        return [ProjectResponse(**row) for row in data]
+
+    def get_project(self, project_id: str | UUID) -> Optional[ProjectResponse]:
+        """Return project or None if not found."""
+        data = self._request("GET", f"/api/projects/{project_id}", allow_404=True)
+        return ProjectResponse(**data) if data is not None else None
+
+    def create_project(self, payload: dict[str, Any]) -> ProjectResponse:
+        data = self._request("POST", "/api/projects", json=payload)
+        return ProjectResponse(**data)
+
+    def update_project(self, project_id: str | UUID, payload: dict[str, Any]) -> ProjectResponse:
+        data = self._request("PATCH", f"/api/projects/{project_id}", json=payload)
+        return ProjectResponse(**data)
+
     # ── Releases ──────────────────────────────────────────────────────────────
 
     def list_releases(
@@ -253,6 +273,7 @@ class ReleaseDBClient:
         target_date: Optional[str] = None,
         notes: Optional[str] = None,
         created_by: Optional[str] = None,
+        project_id: Optional[str | UUID] = None,
         field_values: Optional[dict[str, str]] = None,
         depends_on: Optional[list[str | UUID]] = None,
     ) -> ReleaseResponse:
@@ -269,7 +290,7 @@ class ReleaseDBClient:
             field_values: Custom field values keyed by field_key.
             depends_on: List of upstream release UUIDs this release depends on.
         """
-        payload = {
+        payload: dict[str, Any] = {
             "release_type_config_id": str(release_type_config_id),
             "release_name": release_name,
             "version": version,
@@ -279,6 +300,8 @@ class ReleaseDBClient:
             "field_values": field_values or {},
             "depends_on": [str(x) for x in (depends_on or [])],
         }
+        if project_id is not None:
+            payload["project_id"] = str(project_id)
         data = self._request("POST", "/api/releases", json=payload)
         return ReleaseResponse(**data)
 

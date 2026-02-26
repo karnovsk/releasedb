@@ -91,12 +91,22 @@ erDiagram
         tstz    updated_at
     }
 
+    %% ── PROJECTS ─────────────────────────────────────────────────────────────
+
+    projects {
+        uuid    id              PK
+        text    name
+        text    related_project
+        tstz    created_at
+    }
+
     %% ── RELEASE LAYER ────────────────────────────────────────────────────────
 
     releases {
         uuid    id                     PK
         uuid    release_type_config_id FK
         uuid    owning_team_id         FK
+        uuid    project_id             FK
         varchar release_name           UK
         varchar version
         varchar status
@@ -115,6 +125,11 @@ erDiagram
         numeric value_number
         date    value_date
         jsonb   value_json
+    }
+
+    release_dependencies {
+        uuid    release_id    FK
+        uuid    depends_on_id FK
     }
 
     %% ── ARTIFACT LAYER ───────────────────────────────────────────────────────
@@ -227,6 +242,8 @@ erDiagram
 
     %% ── RELATIONSHIPS ────────────────────────────────────────────────────────
 
+    projects               ||--o{ releases                  : groups
+
     teams                  ||--o{ release_type_configs      : owns
     teams                  ||--o{ tools                     : "owns (internal)"
     teams                  ||--o{ releases                  : "owns (releasing team)"
@@ -247,6 +264,8 @@ erDiagram
     release_type_field_defs ||--o{ artifact_files           : "typed file slot"
 
     releases               ||--o{ release_field_values      : carries
+    releases               ||--o{ release_dependencies      : "has dependencies"
+    releases               ||--o{ release_dependencies      : "depended on by"
     releases               ||--o{ artifacts                 : produces
     releases               ||--o{ validation_runs           : triggers
     releases               ||--o{ approvals                 : needs
@@ -270,10 +289,63 @@ erDiagram
 | Layer | Tables | Purpose |
 |---|---|---|
 | **Config** | teams, environments, tools, release\_type\_configs, release\_type\_field\_defs, validation\_definitions | Static configuration owned by teams |
-| **Release** | releases, release\_field\_values | Named release instances with custom metadata |
+| **Projects** | projects | Optional grouping for releases across teams |
+| **Release** | releases, release\_field\_values, release\_dependencies | Named release instances with custom metadata and dependency graph |
 | **Artifact** | artifacts, artifact\_files, artifact\_tools | Build outputs with provenance and toolchain |
 | **Validation** | validation\_runs, validation\_results | Script execution records and outcomes |
 | **Workflow** | approvals, deployments, release\_events | Sign-off, deployment execution, audit log |
+
+## Table Reference
+
+### Config Layer
+
+| Table | Description |
+|-------|-------------|
+| `teams` | Represents an organizational unit (squad, product team, etc.). Teams own release type configs, tools, and releases. The `slug` is the stable identifier used in API calls. |
+| `environments` | Named deployment targets (e.g. `prod`, `staging`). `tier` encodes promotion order; `requires_approval` gates deployments behind a sign-off workflow. |
+| `tools` | Registry of approved build/validation tools (compilers, scanners, signing tools). Must be registered here before they can be referenced in artifact provenance records. |
+| `release_type_configs` | A template that governs how a particular kind of release is built, validated, and deployed. Defines artifact cardinality, version scheme, approval requirements, and naming rules. Teams own one or more configs (e.g. "library", "service", "infra"). |
+| `release_type_field_defs` | Custom metadata fields declared on a release type (e.g. "JIRA ticket", "changelog URL"). Typed (`text`, `number`, `date`, `json`) and ordered for display. Values are stored in `release_field_values`. |
+| `validation_definitions` | A validation script tied to a release type and optionally scoped to a specific environment. Describes what to run (`script_body` or `script_url`), how (`runner_type`, `runner_image`), and what failure means (`is_blocking`, `on_failure`). |
+
+### Projects
+
+| Table | Description |
+|-------|-------------|
+| `projects` | Optional grouping that collects related releases across teams. A project has a human-readable `name` and a free-form `related_project` text field (e.g. a linked initiative or external project name). Releases optionally carry a `project_id` FK; the field is nullable so existing releases are unaffected. |
+
+### Release Layer
+
+| Table | Description |
+|-------|-------------|
+| `releases` | The central record of a release — name, version, owning team, and current status. Optionally linked to a `project`. Status progresses through a state machine (`draft → validating → approved → deploying → deployed`; terminal states: `failed`, `cancelled`, `archived`). Only reflects the *current* state; full history is in `release_events`. |
+| `release_field_values` | EAV storage for the custom fields defined by the release's type config. One row per `(release, field_def)` pair. The value columns are type-split (`value_text`, `value_number`, `value_date`, `value_json`) rather than a single untyped text column. |
+| `release_dependencies` | Records that release A depends on release B (i.e. B must be deployed before A). Backs the lineage graph shown in the UI. A release cannot be archived if a non-archived release depends on it. |
+
+### Artifact Layer
+
+| Table | Description |
+|-------|-------------|
+| `artifacts` | A versioned build output associated with a release. Captures provenance: git commit, branch, build system ID, SBOM, and a content digest. One release may have multiple artifacts (e.g. AMD64 + ARM64 images). |
+| `artifact_files` | Individual files inside an artifact (binary, signature, checksum, metadata). `storage_uri` points to the backing object store (e.g. `s3://bucket/key`). This is what is deleted during a purge to reclaim S3 storage. |
+| `artifact_tools` | Records which registered tools (and at which version) were used to produce an artifact. Enables cross-artifact toolchain queries and supply-chain auditing. |
+
+### Validation Layer
+
+| Table | Description |
+|-------|-------------|
+| `validation_runs` | A single execution of all applicable validation definitions for a release in a given environment. Tracks overall status and timing. Created by `POST /releases/{id}/validate`. |
+| `validation_results` | The outcome of one validation definition within a run. Stores exit code, stdout/stderr, duration, and structured evidence. Status can be `passed`, `failed`, `skipped`, or `error`. |
+
+### Workflow Layer
+
+| Table | Description |
+|-------|-------------|
+| `approvals` | A sign-off decision (`approved` or `rejected`) from an approving team for a release targeting a specific environment. Multiple approvals may be required depending on the release type config. |
+| `deployments` | A single deployment execution — links a release, artifact, and environment. Updated by external CI/CD systems as the deploy progresses. `rollback_of` creates an explicit rollback chain pointing to the deployment being reversed. |
+| `release_events` | Append-only audit log of every significant action taken on a release (status changes, validation triggers, deployment starts, approvals, archive/purge). Enforced immutable at the database level via PostgreSQL `RULE`s — rows are never updated or deleted. |
+
+---
 
 ## Key Design Decisions
 

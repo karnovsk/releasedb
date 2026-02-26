@@ -272,9 +272,15 @@ body {
     </div>
 
     <div class="sb-section">
+      <div class="sb-label">Projects</div>
+      <div class="sb-item" onclick="nav('projects',this)"><div class="sb-pip" style="background:#2a5c8a"></div>projects</div>
+    </div>
+
+    <div class="sb-section">
       <div class="sb-label">Release Layer</div>
       <div class="sb-item" onclick="nav('releases',this)"><div class="sb-pip" style="background:#b84c2e"></div>releases</div>
       <div class="sb-item" onclick="nav('release_field_values',this)"><div class="sb-pip" style="background:#b84c2e"></div>release_field_values</div>
+      <div class="sb-item" onclick="nav('release_dependencies',this)"><div class="sb-pip" style="background:#b84c2e"></div>release_dependencies</div>
     </div>
 
     <div class="sb-section">
@@ -435,12 +441,40 @@ body {
 
     </div>
 
+    <!-- PROJECTS -->
+    <div class="section-header" id="section-projects">
+      <div class="sh-bar" style="background:#2a5c8a"></div>
+      <div class="sh-text">Projects</div>
+      <div class="sh-rule"></div>
+      <div class="sh-count">1 table</div>
+    </div>
+
+    <div class="table-grid">
+
+      <!-- projects -->
+      <div class="tc" id="projects">
+        <div class="tc-head">
+          <div>
+            <div class="tc-name-row"><div class="tc-dot" style="background:#2a5c8a"></div><div class="tc-name">projects</div></div>
+            <div class="tc-desc">Optional grouping for releases across teams. A release carries a nullable project_id FK.</div>
+          </div>
+        </div>
+        <div class="tc-fields">
+          <div class="fr"><span class="fr-badge b-pk">PK</span><span class="fr-name pk">id</span><span class="fr-type">uuid</span><span class="fr-note">gen_random_uuid()</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">name</span><span class="fr-type">text</span><span class="fr-note">NOT NULL</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">related_project</span><span class="fr-type">text</span><span class="fr-note">initiative, Jira epic, etc.</span></div>
+          <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">created_at</span><span class="fr-type">timestamptz</span><span class="fr-note">DEFAULT now()</span></div>
+        </div>
+      </div>
+
+    </div>
+
     <!-- RELEASE LAYER -->
     <div class="section-header" id="section-release">
       <div class="sh-bar" style="background:#b84c2e"></div>
       <div class="sh-text">Release Layer</div>
       <div class="sh-rule"></div>
-      <div class="sh-count">2 tables</div>
+      <div class="sh-count">3 tables</div>
     </div>
 
     <div class="table-grid">
@@ -464,6 +498,7 @@ body {
           <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">target_date</span><span class="fr-type">date</span><span class="fr-note">planned go-live</span></div>
           <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">notes</span><span class="fr-type">text</span><span class="fr-note">release notes / MD</span></div>
           <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">created_by</span><span class="fr-type">varchar(255)</span><span class="fr-note">user identity</span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">project_id</span><span class="fr-type">uuid</span><span class="fr-note">→ projects.id (nullable)</span></div>
           <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">created_at</span><span class="fr-type">timestamptz</span><span class="fr-note"></span></div>
           <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">updated_at</span><span class="fr-type">timestamptz</span><span class="fr-note"></span></div>
         </div>
@@ -486,6 +521,21 @@ body {
           <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">value_date</span><span class="fr-type">date</span><span class="fr-note">date fields</span></div>
           <div class="fr"><span class="fr-badge b-nil"> </span><span class="fr-name">value_json</span><span class="fr-type">jsonb</span><span class="fr-note">complex / array fields</span></div>
           <div class="fr"><span class="fr-badge b-uk">UK</span><span class="fr-name">—</span><span class="fr-type"></span><span class="fr-note">(release_id, field_def_id)</span></div>
+        </div>
+      </div>
+
+      <!-- release_dependencies -->
+      <div class="tc" id="release_dependencies">
+        <div class="tc-head">
+          <div>
+            <div class="tc-name-row"><div class="tc-dot" style="background:#b84c2e"></div><div class="tc-name">release_dependencies</div></div>
+            <div class="tc-desc">Many-to-many DAG of release lineage. A release can depend on multiple upstream releases; a release can be depended on by many others. Used to derive the lineage graph in the UI.</div>
+          </div>
+        </div>
+        <div class="tc-fields">
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">release_id</span><span class="fr-type">uuid</span><span class="fr-note">→ releases.id (ON DELETE CASCADE)</span></div>
+          <div class="fr"><span class="fr-badge b-fk">FK</span><span class="fr-name fk">depends_on_id</span><span class="fr-type">uuid</span><span class="fr-note">→ releases.id (ON DELETE RESTRICT)</span></div>
+          <div class="fr"><span class="fr-badge b-uk">PK</span><span class="fr-name">—</span><span class="fr-type"></span><span class="fr-note">(release_id, depends_on_id)</span></div>
         </div>
       </div>
 
@@ -835,7 +885,7 @@ body {
   }
 
   const tableIds = ['teams','release_type_configs','release_type_field_defs','validation_definitions',
-    'environments','releases','release_field_values','tools','artifacts','artifact_files',
+    'environments','releases','release_field_values','release_dependencies','tools','artifacts','artifact_files',
     'artifact_tools','validation_runs','validation_results','approvals','deployments','release_events'];
 
   const observer = new IntersectionObserver((entries) => {

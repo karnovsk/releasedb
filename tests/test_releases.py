@@ -45,7 +45,8 @@ def _release(client, rt_id, *, name, version, **kwargs):
 def test_list_releases_empty(client, rt_id):
     r = client.get("/api/releases")
     assert r.status_code == 200
-    assert r.json() == []
+    assert r.json()["items"] == []
+    assert r.json()["total"] == 0
 
 
 def test_create_release_defaults(client, rt_id):
@@ -81,7 +82,8 @@ def test_list_releases_filter_by_team(client, rt_id):
     _release(client, rt_id, name="r2", version="2.0.0")
     r = client.get("/api/releases", params={"team_slug": "rel-team"})
     assert r.status_code == 200
-    assert len(r.json()) == 2
+    assert len(r.json()["items"]) == 2
+    assert r.json()["total"] == 2
 
 
 # ---------------------------------------------------------------------------

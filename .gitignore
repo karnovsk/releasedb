@@ -25,3 +25,8 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# UI
+ui/node_modules/
+ui/dist/
+ui/.env.local

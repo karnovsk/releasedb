@@ -171,6 +171,23 @@ CREATE TRIGGER trg_validation_definitions_updated_at
 
 
 -- =============================================================================
+-- PROJECTS
+-- =============================================================================
+
+-- ---------------------------------------------------------------------------
+-- projects
+-- Optional grouping for releases across teams.
+-- A release carries a nullable project_id FK.
+-- ---------------------------------------------------------------------------
+CREATE TABLE projects (
+    id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    name            text NOT NULL,
+    related_project text,                                 -- free-form reference (initiative, Jira epic, etc.)
+    created_at      timestamptz NOT NULL DEFAULT now()
+);
+
+
+-- =============================================================================
 -- RELEASE LAYER
 -- =============================================================================
 
@@ -194,6 +211,7 @@ CREATE TABLE releases (
     target_date            date,                          -- planned go-live
     notes                  text,                          -- release notes (Markdown ok)
     created_by             varchar(255),
+    project_id             uuid REFERENCES projects(id) ON DELETE SET NULL,
     created_at             timestamptz  NOT NULL DEFAULT now(),
     updated_at             timestamptz  NOT NULL DEFAULT now()
 );
@@ -201,6 +219,7 @@ CREATE TABLE releases (
 CREATE INDEX ON releases (release_type_config_id);
 CREATE INDEX ON releases (owning_team_id);
 CREATE INDEX ON releases (status);
+CREATE INDEX ON releases (project_id);
 
 CREATE TRIGGER trg_releases_updated_at
     BEFORE UPDATE ON releases
