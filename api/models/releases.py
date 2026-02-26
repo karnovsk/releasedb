@@ -251,3 +251,10 @@ class LineageEdge(BaseModel):
 class LineageResponse(BaseModel):
     nodes: list[ReleaseSummary]
     edges: list[LineageEdge]
+
+
+class PagedReleases(BaseModel):
+    items: list[ReleaseResponse]
+    total: int
+    limit: int
+    offset: int

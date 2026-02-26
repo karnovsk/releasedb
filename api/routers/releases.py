@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 from uuid import UUID
 
 import asyncpg
@@ -15,6 +15,7 @@ from api.models.releases import (
     DeploymentTrigger,
     LineageEdge,
     LineageResponse,
+    PagedReleases,
     ReleaseCreate,
     ReleaseEventResponse,
     ReleaseResponse,
@@ -59,7 +60,7 @@ async def _row_to_release(
 
 # ── Release CRUD ──────────────────────────────────────────────────────────────
 
-@router.get("/releases", response_model=list[ReleaseResponse])
+@router.get("/releases", response_model=PagedReleases)
 async def list_releases(
     team_slug: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
@@ -68,37 +69,42 @@ async def list_releases(
     offset: int = Query(0, ge=0),
     conn: asyncpg.Connection = Depends(db),
 ):
-    conditions = []
-    params: list[Any] = []
+    conditions: list[str] = []
+    filter_params: list[Any] = []
 
     if team_slug:
-        params.append(team_slug)
-        conditions.append(f"t.slug=${len(params)}")
+        filter_params.append(team_slug)
+        conditions.append(f"t.slug=${len(filter_params)}")
     if status:
-        params.append(status)
-        conditions.append(f"r.status=${len(params)}")
+        filter_params.append(status)
+        conditions.append(f"r.status=${len(filter_params)}")
     if release_type_slug:
-        params.append(release_type_slug)
-        conditions.append(f"rtc.slug=${len(params)}")
+        filter_params.append(release_type_slug)
+        conditions.append(f"rtc.slug=${len(filter_params)}")
 
     where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
-
-    params.extend([limit, offset])
-    rows = await conn.fetch(
-        f"""
-        SELECT r.* FROM releases r
+    join = """
         JOIN release_type_configs rtc ON rtc.id = r.release_type_config_id
         JOIN teams t ON t.id = r.owning_team_id
+    """
+
+    total: int = await conn.fetchval(
+        f"SELECT COUNT(*) FROM releases r {join} {where}",
+        *filter_params,
+    )
+
+    page_params = filter_params + [limit, offset]
+    rows = await conn.fetch(
+        f"""
+        SELECT r.* FROM releases r {join}
         {where}
         ORDER BY r.created_at DESC
-        LIMIT ${len(params)-1} OFFSET ${len(params)}
+        LIMIT ${len(page_params) - 1} OFFSET ${len(page_params)}
         """,
-        *params,
+        *page_params,
     )
-    result = []
-    for row in rows:
-        result.append(await _row_to_release(conn, row))
-    return result
+    items = [await _row_to_release(conn, row) for row in rows]
+    return PagedReleases(items=items, total=total, limit=limit, offset=offset)
 
 
 @router.get("/releases/{release_id}", response_model=ReleaseResponse)
@@ -426,17 +432,17 @@ async def list_release_events(
 
 @router.get("/releases/{release_id}/lineage", response_model=LineageResponse)
 async def get_release_lineage(
-    release_id: UUID, conn: asyncpg.Connection = Depends(db)
+    release_id: UUID,
+    direction: Literal["ancestors", "descendants", "both"] = Query("both"),
+    conn: asyncpg.Connection = Depends(db),
 ):
     row = await conn.fetchrow("SELECT id FROM releases WHERE id=$1", release_id)
     if not row:
         raise HTTPException(404, "Release not found")
 
-    # Traverse all ancestors via recursive CTE.
-    # UNION (not UNION ALL) deduplicates edges at each step, which naturally
-    # terminates traversal even if data contains cycles.
-    edge_rows = await conn.fetch(
-        """
+    # Ancestors: follow depends_on_id upward from the given release.
+    # UNION (not UNION ALL) deduplicates, naturally terminating any cycles.
+    _ANCESTOR_CTE = """
         WITH RECURSIVE ancestors AS (
             SELECT release_id, depends_on_id
             FROM release_dependencies
@@ -447,13 +453,39 @@ async def get_release_lineage(
             JOIN ancestors a ON rd.release_id = a.depends_on_id
         )
         SELECT release_id, depends_on_id FROM ancestors
-        """,
-        release_id,
-    )
+    """
 
-    # Collect all unique node IDs, including the starting release itself.
-    node_ids = {release_id}
+    # Descendants: find releases that depend on the given release, then follow forward.
+    _DESCENDANT_CTE = """
+        WITH RECURSIVE descendants AS (
+            SELECT release_id, depends_on_id
+            FROM release_dependencies
+            WHERE depends_on_id = $1
+          UNION
+            SELECT rd.release_id, rd.depends_on_id
+            FROM release_dependencies rd
+            JOIN descendants d ON rd.depends_on_id = d.release_id
+        )
+        SELECT release_id, depends_on_id FROM descendants
+    """
+
+    edge_rows = []
+    if direction in ("ancestors", "both"):
+        edge_rows += list(await conn.fetch(_ANCESTOR_CTE, release_id))
+    if direction in ("descendants", "both"):
+        edge_rows += list(await conn.fetch(_DESCENDANT_CTE, release_id))
+
+    # Deduplicate edges (both CTEs may return overlapping rows for the given node).
+    seen: set[tuple] = set()
+    unique_edges = []
     for r in edge_rows:
+        key = (r["release_id"], r["depends_on_id"])
+        if key not in seen:
+            seen.add(key)
+            unique_edges.append(r)
+
+    node_ids = {release_id}
+    for r in unique_edges:
         node_ids.add(r["release_id"])
         node_ids.add(r["depends_on_id"])
 
@@ -469,6 +501,6 @@ async def get_release_lineage(
                 from_release_id=r["release_id"],
                 to_release_id=r["depends_on_id"],
             )
-            for r in edge_rows
+            for r in unique_edges
         ],
     )
