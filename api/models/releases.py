@@ -143,6 +143,7 @@ class ReleaseCreate(BaseModel):
     target_date: Optional[date] = None
     notes: Optional[str] = None
     created_by: Optional[str] = None
+    project_id: Optional[UUID] = None
     field_values: dict[str, str] = {}
     depends_on: list[UUID] = []
 
@@ -151,6 +152,7 @@ class ReleaseUpdate(BaseModel):
     status: Optional[str] = None
     notes: Optional[str] = None
     target_date: Optional[date] = None
+    project_id: Optional[UUID] = None
 
 
 class ReleaseResponse(BaseModel):
@@ -163,6 +165,7 @@ class ReleaseResponse(BaseModel):
     target_date: Optional[date] = None
     notes: Optional[str] = None
     created_by: Optional[str] = None
+    project_id: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime
     field_values: dict[str, str] = {}

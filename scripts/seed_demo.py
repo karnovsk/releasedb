@@ -179,6 +179,25 @@ log("created field defs")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Projects
+# ─────────────────────────────────────────────────────────────────────────────
+
+section("Projects")
+
+portal = c.create_project({
+    "name": "Customer Portal",
+    "related_project": "Mobile App",
+})
+log(f"created project: {portal.name} ({portal.id})")
+
+iot_platform = c.create_project({
+    "name": "IoT Platform",
+    "related_project": "Device Firmware",
+})
+log(f"created project: {iot_platform.name} ({iot_platform.id})")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Infrastructure releases (platform — ancestor chain)
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -249,6 +268,7 @@ svc_v1 = c.create_release(
         "changelog_url": "https://wiki.example.com/payments/2.3.0",
     },
     depends_on=[str(infra_v2.id)],
+    project_id=str(portal.id),
 )
 c.update_release(svc_v1.id, status="deployed")
 log(f"created + deployed: {svc_v1.release_name}")
@@ -265,6 +285,7 @@ svc_v2 = c.create_release(
         "changelog_url": "https://wiki.example.com/payments/2.4.0",
     },
     depends_on=[str(svc_v1.id)],
+    project_id=str(portal.id),
 )
 c.update_release(svc_v2.id, status="validating")
 log(f"created (validating): {svc_v2.release_name}")
@@ -289,6 +310,7 @@ auth_v1 = c.create_release(
     target_date=str(today - timedelta(days=70)),
     notes="Initial release of centralised auth service.",
     depends_on=[str(infra_v1.id)],
+    project_id=str(portal.id),
 )
 c.update_release(auth_v1.id, status="deployed")
 log(f"created + deployed: {auth_v1.release_name}")
@@ -356,6 +378,7 @@ fw_v1 = c.create_release(
         "target_device": "GW-3000",
         "expected_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     },
+    project_id=str(iot_platform.id),
 )
 c.update_release(fw_v1.id, status="deployed")
 log(f"created + deployed: {fw_v1.release_name}")
@@ -396,6 +419,7 @@ log(f"created (draft): {fw_v3.release_name}")
 section("Done")
 print(f"  Teams:         3  (platform, firmware, backend)")
 print(f"  Environments:  3  (dev, staging, prod)")
+print(f"  Projects:      2  (Customer Portal, IoT Platform)")
 print(f"  Release types: 3  (backend-service, firmware-image, infra-module)")
 print(f"  Releases:     {4 + 7 + 3}  across all types and statuses")
 print()

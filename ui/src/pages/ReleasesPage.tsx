@@ -2,9 +2,12 @@ import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { AgGridReact } from 'ag-grid-react';
+import { themeQuartz, colorSchemeDark } from 'ag-grid-community';
 import type { ColDef, GridReadyEvent, RowClickedEvent } from 'ag-grid-community';
+
+const darkTheme = themeQuartz.withPart(colorSchemeDark);
 import { apiGet } from '../api/client';
-import type { PagedReleases, Release } from '../types';
+import type { PagedReleases, Project, Release } from '../types';
 import StatusBadge from '../components/StatusBadge';
 
 const PAGE_SIZE = 25;
@@ -24,6 +27,17 @@ export default function ReleasesPage() {
     queryFn: () => apiGet<PagedReleases>('/api/releases?limit=500&offset=0'),
   });
 
+  const { data: projects } = useQuery<Project[]>({
+    queryKey: ['projects'],
+    queryFn: () => apiGet<Project[]>('/api/projects'),
+  });
+
+  const projectMap = useMemo(() => {
+    const m = new Map<string, string>();
+    projects?.forEach((p) => m.set(p.id, p.name));
+    return m;
+  }, [projects]);
+
   const colDefs = useMemo<ColDef<Release>[]>(() => [
     {
       field: 'release_name',
@@ -32,6 +46,14 @@ export default function ReleasesPage() {
       minWidth: 180,
       sortable: true,
       filter: true,
+    },
+    {
+      headerName: 'Project',
+      flex: 1,
+      minWidth: 120,
+      sortable: true,
+      filter: true,
+      valueGetter: ({ data }) => (data?.project_id ? projectMap.get(data.project_id) ?? '' : ''),
     },
     {
       field: 'version',
@@ -89,7 +111,7 @@ export default function ReleasesPage() {
       minWidth: 200,
       hide: true,
     },
-  ], []);
+  ], [projectMap]);
 
   const defaultColDef = useMemo<ColDef>(() => ({
     resizable: true,
@@ -98,7 +120,7 @@ export default function ReleasesPage() {
 
   const onRowClicked = useCallback(
     (e: RowClickedEvent<Release>) => {
-      if (e.data) navigate(`/lineage/${e.data.id}`);
+      if (e.data) navigate(`/releases/${e.data.id}`);
     },
     [navigate]
   );
@@ -142,13 +164,14 @@ export default function ReleasesPage() {
           {total} release{total !== 1 ? 's' : ''}
         </span>
         <span className="text-xs text-gray-600 ml-auto">
-          Click a row to view its lineage · Use column header menus to show/hide columns
+          Click a row to view details
         </span>
       </div>
 
       {/* AG Grid */}
-      <div className="ag-theme-quartz-dark flex-1 rounded overflow-hidden">
+      <div className="flex-1 rounded overflow-hidden">
         <AgGridReact<Release>
+          theme={darkTheme}
           rowData={releases}
           columnDefs={colDefs}
           defaultColDef={defaultColDef}

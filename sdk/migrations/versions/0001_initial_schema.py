@@ -158,6 +158,19 @@ def upgrade() -> None:
     """)
 
     # ==================================================================
+    # PROJECTS
+    # ==================================================================
+
+    op.execute("""
+        CREATE TABLE projects (
+            id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+            name            text NOT NULL,
+            related_project text,
+            created_at      timestamptz NOT NULL DEFAULT now()
+        )
+    """)
+
+    # ==================================================================
     # RELEASE LAYER
     # ==================================================================
 
@@ -177,6 +190,7 @@ def upgrade() -> None:
             target_date            date,
             notes                  text,
             created_by             varchar(255),
+            project_id             uuid REFERENCES projects(id) ON DELETE SET NULL,
             created_at             timestamptz  NOT NULL DEFAULT now(),
             updated_at             timestamptz  NOT NULL DEFAULT now()
         )
@@ -184,6 +198,7 @@ def upgrade() -> None:
     op.execute("CREATE INDEX ON releases (release_type_config_id)")
     op.execute("CREATE INDEX ON releases (owning_team_id)")
     op.execute("CREATE INDEX ON releases (status)")
+    op.execute("CREATE INDEX ON releases (project_id)")
     op.execute("""
         CREATE TRIGGER trg_releases_updated_at
             BEFORE UPDATE ON releases
@@ -408,6 +423,7 @@ def downgrade() -> None:
     op.execute("DROP TABLE IF EXISTS release_dependencies CASCADE")
     op.execute("DROP TABLE IF EXISTS release_field_values CASCADE")
     op.execute("DROP TABLE IF EXISTS releases CASCADE")
+    op.execute("DROP TABLE IF EXISTS projects CASCADE")
 
     # Config layer
     op.execute("DROP TABLE IF EXISTS validation_definitions CASCADE")

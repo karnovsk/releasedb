@@ -149,8 +149,8 @@ async def create_release(body: ReleaseCreate, conn: asyncpg.Connection = Depends
             """
             INSERT INTO releases
               (release_type_config_id, owning_team_id, release_name, version,
-               target_date, notes, created_by)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+               target_date, notes, created_by, project_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING *
             """,
             rtc["id"],
@@ -160,6 +160,7 @@ async def create_release(body: ReleaseCreate, conn: asyncpg.Connection = Depends
             body.target_date,
             body.notes,
             body.created_by,
+            body.project_id,
         )
 
         # Insert field values

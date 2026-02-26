@@ -32,6 +32,13 @@ class EnvironmentResponse(BaseModel):
     config: Optional[dict[str, Any]] = None
 
 
+class ProjectResponse(BaseModel):
+    id: UUID
+    name: str
+    related_project: Optional[str] = None
+    created_at: datetime
+
+
 class ReleaseTypeResponse(BaseModel):
     id: UUID
     team_id: UUID
@@ -58,6 +65,7 @@ class ReleaseResponse(BaseModel):
     target_date: Optional[date] = None
     notes: Optional[str] = None
     created_by: Optional[str] = None
+    project_id: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime
     field_values: dict[str, str] = {}
@@ -67,12 +75,14 @@ class ReleaseResponse(BaseModel):
 class ArtifactFileResponse(BaseModel):
     id: UUID
     artifact_id: UUID
+    field_def_id: Optional[UUID] = None
     filename: str
     file_role: Optional[str] = None
     storage_uri: Optional[str] = None
     media_type: Optional[str] = None
     digest: str
     size_bytes: Optional[int] = None
+    signature: Optional[str] = None
     uploaded_at: datetime
 
 

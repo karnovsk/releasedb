@@ -44,12 +44,14 @@ class ArtifactCreate(BaseModel):
 class ArtifactFileResponse(BaseModel):
     id: UUID
     artifact_id: UUID
+    field_def_id: Optional[UUID] = None
     filename: str
     file_role: Optional[str] = None
     storage_uri: Optional[str] = None
     media_type: Optional[str] = None
     digest: str
     size_bytes: Optional[int] = None
+    signature: Optional[str] = None
     uploaded_at: datetime
 
 
@@ -77,6 +79,7 @@ class ValidationResultUpdate(BaseModel):
     exit_code: Optional[int] = None
     stdout: Optional[str] = None
     stderr: Optional[str] = None
+    log_url: Optional[str] = None
 
 
 class ValidationResultResponse(BaseModel):
@@ -96,4 +99,5 @@ class ValidationResultResponse(BaseModel):
 
 class DeploymentUpdate(BaseModel):
     status: str
+    started_at: Optional[str] = None
     finished_at: Optional[str] = None

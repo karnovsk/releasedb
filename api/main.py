@@ -21,6 +21,7 @@ from api.routers import (
     artifacts,
     deployments,
     environments,
+    projects,
     release_types,
     releases,
     teams,
@@ -45,6 +46,7 @@ app = FastAPI(
 
 app.include_router(teams.router,              prefix="/api")
 app.include_router(environments.router,       prefix="/api")
+app.include_router(projects.router,           prefix="/api")
 app.include_router(release_types.router,      prefix="/api")
 app.include_router(releases.router,           prefix="/api")
 app.include_router(artifacts.router,          prefix="/api")

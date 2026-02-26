@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ReleasesPage from './pages/ReleasesPage';
-import LineagePage from './pages/LineagePage';
+import ReleaseDetailPage from './pages/ReleaseDetailPage';
 
 export default function App() {
   return (
@@ -12,7 +12,7 @@ export default function App() {
       <main className="flex-1 overflow-hidden">
         <Routes>
           <Route path="/" element={<ReleasesPage />} />
-          <Route path="/lineage/:id" element={<LineagePage />} />
+          <Route path="/releases/:id" element={<ReleaseDetailPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
