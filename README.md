@@ -78,7 +78,7 @@ releasedb/
 | **[Seed script](scripts/seed_demo.py)** | Populates the DB with 3 teams, 3 envs, 2 projects, 14 releases, and a multi-level lineage graph | `python scripts/seed_demo.py` (API must be running) |
 | **[Validator example](sdk/examples/firmware_validator.py)** | Full working validator: file existence, checksum, semver checks | Copy and adapt for your team's release type |
 | **[Team config template](releasedb.template.yaml)** | Config-as-code YAML template with all options annotated | `cp releasedb.template.yaml releasedb.yaml`, then edit |
-| **[Interactive schema](schema/schema_v3.html)** | Navigable HTML reference for all 17 DB tables | Open in browser |
+| **[Interactive schema](schema/schema_v3.html)** | Navigable HTML reference for all 18 DB tables | Open in browser |
 | **[API docs](http://localhost:8000/docs)** | Auto-generated Swagger UI for all endpoints | Start the API server, then open in browser |
 
 ---
