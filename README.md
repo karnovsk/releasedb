@@ -23,7 +23,11 @@ releasedb/
 │   ├── database.py            ← asyncpg connection pool
 │   ├── dependencies.py        ← Auth and DB injection
 │   ├── models/                ← Pydantic request/response models
-│   └── routers/               ← One file per resource group
+│   ├── routers/               ← One file per resource group
+│   ├── migrations/            ← Alembic database migrations
+│   │   └── versions/
+│   │       └── 0001_initial_schema.py
+│   └── tests/                 ← API integration tests (requires Postgres)
 ├── sdk/
 │   ├── releasedb/             ← Python package source
 │   │   ├── client.py          ← ReleaseDBClient (full API access)
@@ -31,9 +35,6 @@ releasedb/
 │   │   ├── exceptions.py      ← APIError, NotFoundError
 │   │   ├── validator/         ← Optional validator SDK
 │   │   └── sync/              ← releasedb-sync tool (config-as-code)
-│   ├── migrations/            ← Alembic database migrations
-│   │   └── versions/
-│   │       └── 0001_initial_schema.py
 │   ├── examples/              ← Example validation scripts
 │   ├── tests/                 ← SDK unit tests (no live DB required)
 │   ├── pyproject.toml
@@ -46,7 +47,7 @@ releasedb/
 │   │   └── types.ts           ← Shared TypeScript interfaces
 │   ├── vite.config.ts
 │   └── package.json
-├── tests/                     ← API integration tests (requires Postgres)
+├── scripts/                   ← Utility scripts (seed_demo.py, etc.)
 ├── docker/
 │   └── init-test-db.sql       ← Creates releasedb_test on first container start
 ├── docker-compose.yml         ← Local Postgres (dev + test databases)
@@ -62,7 +63,7 @@ releasedb/
 |---|---|
 | [User Guide](docs/USER_GUIDE.md) | Configuring release types, registering artifacts, writing validators, running validation, approvals, deployments |
 | [Sync Guide](docs/SYNC.md) | Config-as-code setup with `releasedb-sync` — YAML schema, CLI reference, Jenkins integration |
-| [Schema (ER diagram)](schema/SCHEMA.md) | Mermaid ER diagram — all 15 tables and their relationships |
+| [Schema (ER diagram)](schema/SCHEMA.md) | Mermaid ER diagram — all 18 tables and their relationships |
 | [Schema (interactive)](https://karnovsk.github.io/releasedb/schema/schema_v3.html) | Navigable, layered schema reference — open in a browser |
 | [Schema (DDL)](schema/schema.sql) | Executable PostgreSQL DDL — the source of truth for the database |
 | [SDK README](sdk/README.md) | Python package quickstart and API reference |
@@ -77,7 +78,7 @@ releasedb/
 | **[Seed script](scripts/seed_demo.py)** | Populates the DB with 3 teams, 3 envs, 2 projects, 14 releases, and a multi-level lineage graph | `python scripts/seed_demo.py` (API must be running) |
 | **[Validator example](sdk/examples/firmware_validator.py)** | Full working validator: file existence, checksum, semver checks | Copy and adapt for your team's release type |
 | **[Team config template](releasedb.template.yaml)** | Config-as-code YAML template with all options annotated | `cp releasedb.template.yaml releasedb.yaml`, then edit |
-| **[Interactive schema](schema/schema_v3.html)** | Navigable HTML reference for all 16 DB tables | Open in browser |
+| **[Interactive schema](schema/schema_v3.html)** | Navigable HTML reference for all 17 DB tables | Open in browser |
 | **[API docs](http://localhost:8000/docs)** | Auto-generated Swagger UI for all endpoints | Start the API server, then open in browser |
 
 ---
@@ -229,7 +230,7 @@ pytest sdk/tests/ -v
 ### Integration tests (requires Postgres via `docker compose up -d`)
 
 ```bash
-pytest tests/ -v
+pytest api/tests/ -v
 ```
 
 The integration test suite automatically runs Alembic migrations against
@@ -239,7 +240,7 @@ so each test starts with a clean database. The dev database is not affected.
 To use a different test database:
 
 ```bash
-TEST_DATABASE_URL=postgresql://user:pass@host/mydb pytest tests/ -v
+TEST_DATABASE_URL=postgresql://user:pass@host/mydb pytest api/tests/ -v
 ```
 
 ---
