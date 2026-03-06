@@ -38,6 +38,14 @@ releasedb/
 │   ├── tests/                 ← SDK unit tests (no live DB required)
 │   ├── pyproject.toml
 │   └── README.md              ← SDK quickstart and API reference
+├── ui/
+│   ├── src/
+│   │   ├── pages/             ← ReleasesPage, ReleaseDetailPage
+│   │   ├── components/        ← StatusBadge and shared UI
+│   │   ├── api/               ← Typed fetch wrapper
+│   │   └── types.ts           ← Shared TypeScript interfaces
+│   ├── vite.config.ts
+│   └── package.json
 ├── tests/                     ← API integration tests (requires Postgres)
 ├── docker/
 │   └── init-test-db.sql       ← Creates releasedb_test on first container start
@@ -221,6 +229,61 @@ DATABASE_URL=postgresql://releasedb:releasedb@localhost/releasedb \
 
 Interactive API docs available at `http://localhost:8000/docs`.
 
+### 5. Seed demo data (optional)
+
+Populate the database with a realistic multi-team dataset for exploring the UI:
+
+```bash
+python scripts/seed_demo.py
+```
+
+This creates:
+
+| What | Detail |
+|---|---|
+| **Teams** | Platform Engineering, Backend Services, Firmware Team |
+| **Environments** | dev (tier 1), staging (tier 2), prod (tier 3, requires approval) |
+| **Projects** | Customer Portal, IoT Platform |
+| **Release types** | backend-service, firmware-image, infra-module |
+| **Releases** | 14 across all statuses — deployed, validating, approved, draft, failed, cancelled |
+
+Releases are linked with dependencies to form a multi-level lineage graph, suitable for testing the DAG view in the Web UI.
+
+The script requires the API to be running. Override the defaults with environment variables:
+
+```bash
+RELEASEDB_URL=http://localhost:8000 RELEASEDB_TOKEN=devtoken python scripts/seed_demo.py
+```
+
+> **Note:** The script does not check for existing data — run it against a freshly migrated database to avoid duplicate entries. To reset: `alembic downgrade base && alembic upgrade head` (see step 3).
+
+### 6. Start the Web UI
+
+```bash
+cd ui
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173` in a browser. The UI proxies API requests to `http://localhost:8000` automatically (configured in `vite.config.ts`).
+
+---
+
+## Web UI
+
+ReleaseDB ships a read-only web dashboard built with Vite + React + AG Grid + React Flow.
+
+**Releases table** — filterable, sortable grid showing all releases across teams. Columns: release name, project, version, status, owning team, target date. Click any row to open the detail view.
+
+**Release detail** — tabbed view per release:
+- **Details** — metadata, custom field values, project link
+- **Artifacts** — build outputs with file provenance
+- **Validation** — run history and per-check results
+- **Approvals** — sign-off records per environment
+- **Deployments** — deployment history and rollback chains
+- **Events** — full audit log
+- **Lineage** — interactive DAG showing upstream and downstream release dependencies (rendered with React Flow + Dagre layout)
+
 ---
 
 ## Running Tests
@@ -274,18 +337,3 @@ Decision needed: is this a display/query concern (filter by deployed releases) o
 
 ---
 
-### 2. Release and lineage dashboard
-
-A read-only web view showing existing releases, their provenance, lineage chains, and validation status.
-
-**Off-the-shelf options to evaluate:**
-
-| Tool | Fit | Notes |
-|---|---|---|
-| **Retool** | High | Connects directly to PostgreSQL; drag-and-drop tables, lineage tree via custom component; no frontend code needed; hosted or self-hosted |
-| **Metabase** | Medium | Strong for tabular views and filters; limited for graph/tree visualisation of lineage |
-| **Grafana** | Medium | Good dashboards for time-series validation metrics; not designed for relational record browsing |
-| **Superset** | Medium | SQL-driven; good for aggregate views, weak on record-level drill-down |
-| **Bespoke (FastAPI + HTMX)** | High control | ~300 lines for a read-only release browser; full control over lineage tree rendering; no JS framework needed |
-
-Minimum viable view: release list (filterable by team, release type, status) → release detail (provenance, artifacts, validation results, lineage chain). Retool covers this in a day; a bespoke view takes a sprint but is fully ownable.

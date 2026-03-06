@@ -42,6 +42,14 @@ Jenkins builds → artifacts stored in S3/Artifactory/NFS
               validation results, approvals, deployments
 ```
 
+### Web Dashboard
+
+ReleaseDB ships a built-in read-only web dashboard. It provides a searchable release table and a per-release detail view with tabs for artifacts, validation, approvals, deployments, the audit log, and an interactive lineage DAG showing upstream and downstream release dependencies.
+
+![Release detail view — lineage DAG and metadata tabs](Screenshot%202026-03-01%20200740.png)
+
+*Release detail view: the lineage graph (top) shows the selected release (highlighted) in context of its upstream and downstream dependencies, each node annotated with version and status. The tabs below surface structured metadata, validation results, approvals, and the full audit trail.*
+
 ---
 
 ## 2. Core Concepts
@@ -57,10 +65,10 @@ Each team defines a **release type config** once. It specifies:
 A versioned build output, linked to a specific git commit and CI run. An artifact can have one or many files depending on the team's config. Every artifact records which **tools** (and at what git version) were used to build it.
 
 ### Release
-A named, versioned release instance. It references an artifact, carries the team's custom metadata fields, and moves through a lifecycle: `draft → validating → approved → deploying → deployed`.
+A named, versioned release instance. It references an artifact, carries the team's custom metadata fields, and moves through a lifecycle: `draft → (validating) → approved → deploying → deployed`. The `validating` step is skipped if no validation definitions are registered for the release type.
 
 ### Validation Definition
-A user-supplied script registered against a release type + environment. ReleaseDB executes it in a Docker container and records the result. Exit 0 = pass. Anything else = fail.
+*(Optional)* A user-supplied script registered against a release type + environment. ReleaseDB executes it in a Docker container and records the result. Exit 0 = pass. Anything else = fail. Teams that validate in their own environment and report results via the API, or that don't require formal validation, do not need to register any definitions.
 
 ### Environment
 A deployment target (e.g. `dev`, `staging`, `production`) with an optional promotion tier and approval requirement.
@@ -294,10 +302,12 @@ The release starts in `draft` status.
 ### Release lifecycle
 
 ```
-draft → validating → approved → deploying → deployed
-                  ↘                       ↘
-                  failed               cancelled
+draft → (validating) → approved → deploying → deployed
+              ↘                             ↘
+            failed                       cancelled
 ```
+
+Validation is optional. If no validation definitions are registered for the release type, the release moves directly from `draft` to `approved` without a `validating` step.
 
 ---
 
@@ -469,6 +479,8 @@ curl -X PATCH https://releasedb.internal/api/validation-definitions/<id> \
 ---
 
 ## 9. Running Validation
+
+> **Validation is optional.** If your release type has no validation definitions registered, skip this section. Releases will move directly from `draft` to `approved`.
 
 ### Trigger manually
 
