@@ -18,9 +18,10 @@
 10. [Approvals](#10-approvals)
 11. [Deployment](#11-deployment)
 12. [Artifact Lineage & Toolchain Tracking](#12-artifact-lineage--toolchain-tracking)
-13. [Local Development & Testing](#13-local-development--testing)
-14. [API Reference](#14-api-reference)
-15. [Troubleshooting](#15-troubleshooting)
+13. [Release Dependencies & Lineage](#13-release-dependencies--lineage)
+14. [Local Development & Testing](#14-local-development--testing)
+15. [API Reference](#15-api-reference)
+16. [Troubleshooting](#16-troubleshooting)
 
 ---
 
@@ -72,6 +73,9 @@ A named, versioned release instance. It references an artifact, carries the team
 
 ### Environment
 A deployment target (e.g. `dev`, `staging`, `production`) with an optional promotion tier and approval requirement.
+
+### Projects
+*(Optional)* A named grouping for collecting related releases across teams. A project has a `name` and a free-form `related_project` text field (e.g. a linked initiative or external project name). Releases carry a nullable `project_id` FK — existing releases are unaffected if no project is set.
 
 ---
 
@@ -611,7 +615,49 @@ curl https://releasedb.internal/api/releases/<release-id>/events
 
 ---
 
-## 13. Local Development & Testing
+## 13. Release Dependencies & Lineage
+
+Releases can declare upstream dependencies, forming a directed acyclic graph (DAG) of release lineage. The Web UI renders this as an interactive graph; the API exposes it via the `/lineage` endpoint.
+
+### Declaring dependencies
+
+Pass `depends_on` (a list of release UUIDs) when creating a release:
+
+```bash
+curl -X POST https://releasedb.internal/api/releases \
+  -H "Authorization: Bearer $RELEASEDB_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "release_type_config_id": "<config-id>",
+    "release_name": "api-gateway-v3.0.0",
+    "version": "3.0.0",
+    "depends_on": ["<auth-service-release-id>", "<payments-service-release-id>"]
+  }'
+```
+
+Or via the Python client:
+
+```python
+release = client.create_release(
+    release_type_config_id="<config-id>",
+    release_name="api-gateway-v3.0.0",
+    version="3.0.0",
+    depends_on=["<auth-service-release-id>", "<payments-service-release-id>"],
+)
+```
+
+### Querying the lineage graph
+
+```bash
+curl https://releasedb.internal/api/releases/<release-id>/lineage \
+  -H "Authorization: Bearer $RELEASEDB_TOKEN"
+```
+
+Returns all upstream and downstream releases as a list of edges (`release_id` → `depends_on_id`). The Web UI renders this as an interactive DAG — click any node to navigate to that release.
+
+---
+
+## 14. Local Development & Testing
 
 ### Run your validator locally without a ReleaseDB instance
 
@@ -671,7 +717,7 @@ pytest tests/ -v
 
 ---
 
-## 14. API Reference
+## 15. API Reference
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -694,7 +740,7 @@ All endpoints require `Authorization: Bearer <token>`.
 
 ---
 
-## 15. Troubleshooting
+## 16. Troubleshooting
 
 **Validation fails with "checksum mismatch on script"**
 The script in S3 was modified after registration. Re-upload the script and update `script_checksum` via `PATCH /api/validation-definitions/:id`.

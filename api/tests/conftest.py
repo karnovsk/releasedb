@@ -13,7 +13,7 @@ Prerequisites
 
        pip install -r api/requirements.txt
        pip install -e "sdk/.[dev]"
-       pip install -r tests/requirements.txt
+       pip install -r api/tests/requirements.txt
 
 3. Run migrations against the test database:
 
@@ -21,11 +21,11 @@ Prerequisites
 
 Run the tests:
 
-    pytest tests/ -v
+    pytest api/tests/ -v
 
 Override the database URL:
 
-    TEST_DATABASE_URL=postgresql://user:pass@host/releasedb_test pytest tests/
+    TEST_DATABASE_URL=postgresql://user:pass@host/releasedb_test pytest api/tests/
 """
 
 import os
@@ -49,7 +49,7 @@ TEST_TOKEN = "testtoken"
 os.environ["DATABASE_URL"] = TEST_DB_URL
 os.environ["RELEASEDB_API_TOKEN"] = TEST_TOKEN
 
-_SDK_DIR = Path(__file__).parent.parent / "sdk"
+_API_DIR = Path(__file__).parent.parent
 
 # ---------------------------------------------------------------------------
 # Session fixture: run Alembic migrations once per test session.
@@ -62,7 +62,7 @@ def _run_migrations():
     alembic_url = TEST_DB_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
     result = subprocess.run(
         [sys.executable, "-m", "alembic", "-c", "migrations/alembic.ini", "upgrade", "head"],
-        cwd=_SDK_DIR,
+        cwd=_API_DIR,
         env={**os.environ, "DATABASE_URL": alembic_url},
         capture_output=True,
         text=True,
@@ -107,6 +107,7 @@ _ALL_TABLES = [
     "validation_definitions",
     "release_type_field_defs",
     "release_type_configs",
+    "projects",
     "environments",
     "teams",
 ]

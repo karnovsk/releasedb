@@ -376,7 +376,7 @@ rollback chain without a separate table.
 ## Implementation Notes
 
 See [`schema.sql`](schema.sql) for the full executable DDL.
-See [`../sdk/migrations/`](../sdk/migrations/) for Alembic migration scripts.
+See [`../api/migrations/`](../api/migrations/) for Alembic migration scripts.
 
 All `updated_at` columns are maintained automatically by the `set_updated_at()`
 trigger function. Enum-like columns use `CHECK` constraints rather than

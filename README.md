@@ -70,6 +70,18 @@ releasedb/
 
 ---
 
+## Demo & Examples
+
+| Resource | What it does | How to use |
+|---|---|---|
+| **[Seed script](scripts/seed_demo.py)** | Populates the DB with 3 teams, 3 envs, 2 projects, 14 releases, and a multi-level lineage graph | `python scripts/seed_demo.py` (API must be running) |
+| **[Validator example](sdk/examples/firmware_validator.py)** | Full working validator: file existence, checksum, semver checks | Copy and adapt for your team's release type |
+| **[Team config template](releasedb.template.yaml)** | Config-as-code YAML template with all options annotated | `cp releasedb.template.yaml releasedb.yaml`, then edit |
+| **[Interactive schema](schema/schema_v3.html)** | Navigable HTML reference for all 16 DB tables | Open in browser |
+| **[API docs](http://localhost:8000/docs)** | Auto-generated Swagger UI for all endpoints | Start the API server, then open in browser |
+
+---
+
 ## Team Onboarding — Config-as-Code
 
 Team configuration (release types, custom fields, validation scripts) lives in a
@@ -97,93 +109,13 @@ integration examples, and the team onboarding checklist.
 
 ---
 
-## SDK Install
+## SDK
 
 ```bash
 pip install releasedb
 ```
 
-The `releasedb` package provides two capabilities:
-
-1. **Python client** — query releases, submit artifacts, trigger validation, manage approvals and deployments via `ReleaseDBClient`.
-2. **Validator SDK** (optional) — write validation scripts executed by the ReleaseDB runner. Only needed if ReleaseDB runs your validation scripts for you.
-
-### Python Client Quickstart
-
-```python
-from releasedb import ReleaseDBClient
-
-client = ReleaseDBClient(
-    api_url="https://releasedb.internal",
-    api_token="tok_...",
-)
-
-# Create a release
-release = client.create_release(
-    release_type_config_id="<uuid>",
-    release_name="firmware-2025-q2-drop3",
-    version="2.4.1",
-    created_by="ci-pipeline",
-    field_values={"expected_sha256": "abc123...", "jira_ticket": "FW-1234"},
-)
-
-# Submit an artifact from CI
-artifact = client.submit_artifact(
-    release_id=release.id,
-    version="2.4.1",
-    git_commit_sha="abc123",
-    git_branch="main",
-    build_id="jenkins-1234",
-    files=[
-        {
-            "filename": "firmware.bin",
-            "digest": "sha256:...",
-            "size_bytes": 512000,
-            "file_role": "primary",
-            "storage_uri": "s3://my-bucket/fw/firmware.bin",
-        }
-    ],
-)
-
-# Trigger validation
-run = client.trigger_validation(release.id, environment="staging")
-```
-
-See the [SDK README](sdk/README.md) for the full client API reference.
-
-### (Optional) Writing a Validation Script
-
-> Validation scripts are **optional**. Your team may validate in your own environment
-> and report results via the API, or skip validation entirely if your release type
-> doesn't require it.
-
-```python
-from releasedb.validator import Validator
-from releasedb.validator.checks import file_exists, checksum_matches
-
-class FirmwareIntegrityCheck(Validator):
-    name = "firmware-integrity-check"
-
-    def validate(self):
-        binary = self.ctx.artifact.file("firmware.bin")
-        digest = self.ctx.release.require_field("expected_sha256")
-
-        self.check(file_exists(binary))
-        self.check(checksum_matches(binary, digest))
-
-if __name__ == "__main__":
-    FirmwareIntegrityCheck().run()
-```
-
-### Testing a Validator Locally
-
-```bash
-# Run against a local directory of test artifacts — no live API required
-releasedb-validate my_validator.py --dry-run \
-    --release-name firmware-2024.03.1 \
-    --version 2024.03.1 \
-    --files-dir ./test-artifacts/
-```
+The `releasedb` package provides a Python client, an optional validator SDK for writing validation scripts, and the `releasedb-sync` config-as-code CLI. See the **[SDK README](sdk/README.md)** for the full reference and examples.
 
 ---
 
@@ -209,14 +141,14 @@ source .venv/Scripts/activate   # Windows (Git Bash)
 pip install --upgrade pip setuptools
 pip install -r api/requirements.txt
 pip install -e "sdk/.[dev]"
-pip install -r tests/requirements.txt
+pip install -r api/tests/requirements.txt
 ```
 
 ### 3. Apply migrations to the dev database
 
 ```bash
 DATABASE_URL=postgresql+psycopg2://releasedb:releasedb@localhost/releasedb \
-  alembic -c sdk/migrations/alembic.ini upgrade head
+  alembic -c api/migrations/alembic.ini upgrade head
 ```
 
 ### 4. Start the API server
